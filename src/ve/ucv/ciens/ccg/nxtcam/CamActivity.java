@@ -5,6 +5,7 @@ import ve.ucv.ciens.ccg.nxtcam.network.ImageTransferThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
+import android.content.Intent;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ public class CamActivity extends Activity{
 	private CameraPreview cPreview;
 	private CameraSetupTask camSetupTask;
 	private ImageTransferThread imThread;
+	private String serverIp;
 
 	/*******************
 	 * Android methods *
@@ -34,6 +36,9 @@ public class CamActivity extends Activity{
 		
 		cPreview = new CameraPreview(this, hwCamera);
 		setContentView(cPreview);
+		
+		Intent intent = getIntent();
+		serverIp = intent.getStringExtra("address");
 		
 		imThread = new ImageTransferThread();
 	}

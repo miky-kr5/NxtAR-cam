@@ -7,7 +7,7 @@
     <string name="camera_success">Cámara abierta exitosamente</string>
     <string name="camera_failure">La cámara no pudo abrirse</string>
     <string name="get_server_button">Conectar con NxtAR</string>
-    <string name="start_button">Encender cámara</string>
+    <string name="start_button">Conectar con dispositivo controlador</string>
     <string name="title_activity_cam">CamActivity</string>
     <string name="ipAddressLabel">Dirección IP de NxtAR</string>
     <string name="badIpToast">La dirección IP no es válida</string>
