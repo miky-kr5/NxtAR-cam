@@ -39,8 +39,6 @@ public class CamActivity extends Activity{
 		
 		Intent intent = getIntent();
 		serverIp = intent.getStringExtra("address");
-		
-		imThread = new ImageTransferThread();
 	}
 
 	@Override
@@ -73,12 +71,17 @@ public class CamActivity extends Activity{
 
 		camSetupTask = new CameraSetupTask();
 		camSetupTask.execute();
+		
+		imThread = new ImageTransferThread(serverIp);
+		imThread.start();
 	}
 
 	@Override
 	public void onPause(){
 		super.onPause();
 
+		// TODO: Disconnect and destroy the imThread object.
+		
 		cPreview.removePreviewCallback();
 		cPreview.setCamera(null);
 		releaseCamera();

@@ -9,11 +9,11 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraImageMonitor;
+import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
+import ve.ucv.ciens.ccg.nxtcam.utils.Logger.LOG_TYPES;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
-import android.util.Log;
 
 public class ImageTransferThread extends Thread{
-
 	private final String TAG = "IM_THREAD";
 	private final String CLASS_NAME = ImageTransferThread.class.getSimpleName();
 
@@ -24,8 +24,10 @@ public class ImageTransferThread extends Thread{
 	private BufferedWriter writer;
 	private BufferedReader reader;
 	private byte[] image;
+	private String serverIp;
 
-	public ImageTransferThread(){
+	public ImageTransferThread(String serverIp){
+		this.serverIp = serverIp;
 		pause = false;
 		done = false;
 		connected = false;
@@ -37,8 +39,9 @@ public class ImageTransferThread extends Thread{
 	}
 
 	public void run(){
-		if(!connected){
-			Log.e(TAG, CLASS_NAME + ".run() :: Not connected to a server. Finishing thread.");
+		connectToServer();
+		if(socket.isConnected()){
+			Logger.log(Logger.LOG_TYPES.ERROR, TAG, CLASS_NAME + ".run() :: Not connected to a server. Finishing thread.");
 		}else{
 			while(!done){
 				checkPause();
@@ -48,29 +51,37 @@ public class ImageTransferThread extends Thread{
 		}
 	}
 
-	public void connectToServer(String serverIp){
+	private void connectToServer(){
 		try{
-			if(ProjectConstants.DEBUG) Log.i(TAG, CLASS_NAME + ".connectToServer() :: Connecting to the server at " + serverIp);
+			Logger.log(Logger.LOG_TYPES.INFO, TAG, CLASS_NAME + ".connectToServer() :: Connecting to the server at " + serverIp);
 			socket = new Socket(InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
 			writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			connected = true;
-			if(ProjectConstants.DEBUG) Log.i(TAG, CLASS_NAME + ".connectToServer() :: Connection successful.");
+			Logger.log(Logger.LOG_TYPES.INFO, TAG, CLASS_NAME + ".connectToServer() :: Connection successful.");
 		}catch(IOException io){
-			Log.e(TAG, CLASS_NAME + ".connectToServer() :: Connection failed with message: " + io.getMessage());
-			connected = false;
+			Logger.log(Logger.LOG_TYPES.ERROR, TAG, CLASS_NAME + ".connectToServer() :: Connection failed with message: " + io.getMessage());
+		}
+	}
+
+	public void disconnect(){
+		if(socket != null && socket.isConnected()){
+			try{
+				socket.close();
+			}catch (IOException io) {
+				Logger.log(Logger.LOG_TYPES.ERROR, TAG, CLASS_NAME + ".connectToServer() :: " + io.getMessage());
+			}
 		}
 	}
 
 	public synchronized void finish(){
 		done = true;
-		if(ProjectConstants.DEBUG) Log.i(TAG, CLASS_NAME + ".finish() :: Finishing thread.");
+		Logger.log(Logger.LOG_TYPES.INFO, TAG, CLASS_NAME + ".finish() :: Finishing thread.");
 	}
 
 	private void checkPause(){
 		synchronized (threadPauseMonitor){
 			while(pause){
-				if(ProjectConstants.DEBUG) Log.d(TAG, CLASS_NAME + ".checkPause() :: Pause requested.");
+				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".checkPause() :: Pause requested.");
 				try{ threadPauseMonitor.wait(); }catch(InterruptedException ie){}
 			}
 		}
@@ -78,11 +89,11 @@ public class ImageTransferThread extends Thread{
 
 	public synchronized void pauseThread(){
 		pause = true;
-		if(ProjectConstants.DEBUG) Log.d(TAG, CLASS_NAME + ".pauseThread() :: Pausing thread.");
+		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".pauseThread() :: Pausing thread.");
 	}
 
 	public synchronized void resumeThread(){
-		if(ProjectConstants.DEBUG) Log.d(TAG, CLASS_NAME + ".resumeThread() :: Resuming thread.");
+		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".resumeThread() :: Resuming thread.");
 		synchronized (threadPauseMonitor) {
 			pause = false;
 			threadPauseMonitor.notifyAll();
@@ -90,6 +101,9 @@ public class ImageTransferThread extends Thread{
 	}
 
 	public boolean isConnected(){
-		return connected;
+		if(socket != null && socket.isConnected())
+			return true;
+		else
+			return false;
 	}
 }
