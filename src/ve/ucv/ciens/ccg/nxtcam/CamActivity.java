@@ -3,14 +3,12 @@ package ve.ucv.ciens.ccg.nxtcam;
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
 import ve.ucv.ciens.ccg.nxtcam.network.ImageTransferThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
-import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
@@ -94,7 +92,7 @@ public class CamActivity extends Activity{
 		if(hwCamera != null){
 			cPreview.setCamera(hwCamera);
 		}else{
-			Log.wtf(TAG, CLASS_NAME + ".startCameraPreview() :: CAMERA IS NULL!");
+			Logger.log_wtf(TAG, CLASS_NAME + ".startCameraPreview() :: CAMERA IS NULL!");
 			System.exit(1);
 		}
 	}
@@ -115,7 +113,7 @@ public class CamActivity extends Activity{
 			try{
 				cam = Camera.open(0);
 			}catch(Exception e){
-				if(ProjectConstants.DEBUG) Log.e(TAG, CLASS_NAME + ".doInBackground() :: Failed to open the camera.");
+				Logger.log_e(TAG, CLASS_NAME + ".doInBackground() :: Failed to open the camera.");
 			}
 			return cam;
 		}
@@ -124,9 +122,9 @@ public class CamActivity extends Activity{
 		protected void onPostExecute(Camera result) {
 			hwCamera = result;
 			if(result != null){
-				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".onPostExecute() :: Camera successfully opened");
+				Logger.log_d(TAG, CLASS_NAME + ".onPostExecute() :: Camera successfully opened");
 			}else{
-				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".onPostExecute() :: Camera open failed on background task.");
+				Logger.log_d(TAG, CLASS_NAME + ".onPostExecute() :: Camera open failed on background task.");
 				Toast.makeText(getApplicationContext(), R.string.camera_failure, Toast.LENGTH_LONG).show();
 			}
 			startCameraPreview();

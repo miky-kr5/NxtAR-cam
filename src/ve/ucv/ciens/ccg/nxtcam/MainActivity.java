@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.UnknownHostException;
 
+import ve.ucv.ciens.ccg.nxtcam.dialogs.WifiOnDialog;
+import ve.ucv.ciens.ccg.nxtcam.dialogs.WifiOnDialog.WifiOnDialogListener;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
+import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.net.wifi.WifiManager;
@@ -16,9 +18,6 @@ import android.net.wifi.WifiManager.MulticastLock;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 /**
@@ -34,14 +33,10 @@ import android.widget.Toast;
  * @author miky
  *
  */
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements WifiOnDialogListener{
 	// Cosntant fields.
 	private final String TAG = "NXTCAM_MAIN";
 	private final String CLASS_NAME = MainActivity.class.getSimpleName();
-
-	// Gui components.
-	private Button startButton;
-	//private TextView ipField;
 
 	// Resources.
 	private WifiManager wifiManager;
@@ -57,23 +52,18 @@ public class MainActivity extends Activity {
 		// Set up fields.
 		wifiOnByMe = false;
 
-		// Set up gui components.
-		startButton = (Button)findViewById(R.id.startButton);
-		startButton.setOnClickListener(startClickListener);
-		// ipField = (TextView)findViewById(R.id.ipAddressField);
-
 		// Set up services.
 		wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
-		if(!wifiManager.isWifiEnabled())
-			setWifi(true);
 	}
 
 	@Override
 	public void onResume(){
 		super.onResume();
 
-		if(!wifiManager.isWifiEnabled())
-			setWifi(true);
+		if(!wifiManager.isWifiEnabled()){
+			DialogFragment wifiOn = new WifiOnDialog();
+			wifiOn.show(getFragmentManager(), "wifi_on");
+		}
 	}
 
 	@Override
@@ -99,12 +89,12 @@ public class MainActivity extends Activity {
 	 */
 	private void startCamActivity(boolean serverFound, String ipAddress){
 		if(serverFound){
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".startCamActivity() :: Launching camera activity.");
+			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Launching camera activity.");
 			Intent intent = new Intent(this, CamActivity.class);
 			intent.putExtra("address", ipAddress);
 			startActivity(intent);
 		}else{
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".startCamActivity() :: Cannot launch camera activity.");
+			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Cannot launch camera activity.");
 			Toast.makeText(this, R.string.badIpToast, Toast.LENGTH_SHORT).show();
 		}
 	}
@@ -116,35 +106,12 @@ public class MainActivity extends Activity {
 	 */
 	private void setWifi(boolean radioState){
 		wifiManager.setWifiEnabled(radioState);
-		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".setWifi() :: setting wifi to " + (radioState ? "on" : "off"));
+		Logger.log_d(TAG, CLASS_NAME + ".setWifi() :: setting wifi to " + (radioState ? "on" : "off"));
 		if(radioState)
 			wifiOnByMe = true;
 		else
 			wifiOnByMe = false;
 	}
-
-	/*private void validateIpAddress(){
-		if(ipField.getText().toString().compareTo("") != 0){
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "validateIpAddress() :: Launching verification task.");
-			VerifyIpAddressTask verifyIp = new VerifyIpAddressTask();
-			verifyIp.execute(ipField.getText().toString());
-		}else{
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "validateIpAddress() :: Ip address field is empty.");
-			Toast.makeText(this, R.string.emptyIpToast, Toast.LENGTH_SHORT).show();
-		}
-	}*/
-
-	/**
-	 * Event listener for the connection button.
-	 */
-	private final View.OnClickListener startClickListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//validateIpAddress();
-			ServiceDiscoveryTask serviceDiscovery = new ServiceDiscoveryTask();
-			serviceDiscovery.execute();
-		}
-	};
 
 	/**
 	 * Asynchronous task for ad hoc UDP service discovery.
@@ -166,7 +133,7 @@ public class MainActivity extends Activity {
 				InetAddress group = InetAddress.getByName(ProjectConstants.MULTICAST_ADDRESS);
 				udpSocket.joinGroup(group);
 			}catch(IOException io){
-				Logger.log(Logger.LOG_TYPES.ERROR, TAG ,CLASS_NAME + ".ServiceDiscoveryTask() :: " + io.getMessage());
+				Logger.log_e(TAG ,CLASS_NAME + ".ServiceDiscoveryTask() :: " + io.getMessage());
 			}
 		}
 
@@ -187,14 +154,14 @@ public class MainActivity extends Activity {
 			try{
 				while(!done){
 					udpSocket.receive(packet);
-					Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".run() :: Found a server at " + packet.getAddress().getHostAddress());
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Found a server at " + packet.getAddress().getHostAddress());
 					String received = new String(packet.getData());
 					if(received.compareTo("NxtAR server here!") == 0)
 						done = true;
 				}
 				result = true;
 			}catch(IOException io){
-				Logger.log(Logger.LOG_TYPES.ERROR, TAG, CLASS_NAME + ".doInBackground() :: " + io.getMessage());
+				Logger.log_e(TAG, CLASS_NAME + ".doInBackground() :: " + io.getMessage());
 				result = false;
 			}
 
@@ -216,27 +183,19 @@ public class MainActivity extends Activity {
 			else
 				startCamActivity(false, null);
 		}
+	}
+
+	/* ServiceDiscoveryTask serviceDiscovery = new ServiceDiscoveryTask();
+	serviceDiscovery.execute(); */
+
+	@Override
+	public void onWifiOnDialogPositiveClick(DialogFragment dialog) {
+		Toast.makeText(this, R.string.wifi_on_success, Toast.LENGTH_SHORT).show();
+	}
+
+	@Override
+	public void onWifiOnDialogNegativeClick(DialogFragment dialog) {
+		Toast.makeText(this, R.string.wifi_on_fail, Toast.LENGTH_SHORT).show();
+		System.exit(0);
 	};
-
-	/*	private class VerifyIpAddressTask extends AsyncTask<String, Void, Boolean>{
-		private final String CLASS_NAME = VerifyIpAddressTask.class.getSimpleName();
-
-		@Override
-		protected Boolean doInBackground(String... params) {
-			try{
-				InetAddress.getByName(params[0]);
-				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "doInBackground() :: IP address is valid.");
-				return true;
-			}catch(UnknownHostException uh){
-				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "doInBackground() :: IP address is not valid.");
-				return false;
-			}
-		}
-
-		@Override
-		protected void onPostExecute(Boolean result) {
-			super.onPostExecute(result);
-			startCamActivity(result);
-		}
-	};*/
 }

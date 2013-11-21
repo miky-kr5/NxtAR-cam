@@ -22,29 +22,29 @@ public class CameraImageMonitor{
 	}
 
 	public void setImageData(byte[] image){
-		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".setImageData() :: Copying new image.");
+		Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Copying new image.");
 		synchronized(image){
 			this.image = new byte[image.length];
 			System.arraycopy(image, 0, this.image, 0, image.length);
 			imgChanged = true;
 			image.notifyAll();
 		}
-		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".setImageData() :: Data copy finished.");
+		Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Data copy finished.");
 	}
 
 	public byte[] getImageData(){
 		byte[] returnImg;
-		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".getImageData() :: Entry point.");
+		Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Entry point.");
 		synchronized(image){
 			while(!imgChanged){
-				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".getImageData() :: Waiting for new data.");
+				Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Waiting for new data.");
 				try{ image.wait(); }catch(InterruptedException ie){}
 			}
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".getImageData() :: Retrieving new data.");
+			Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Retrieving new data.");
 			returnImg = image.clone();
 			imgChanged = false;
 		}
-		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".getImageData() :: New data retreived.");
+		Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: New data retreived.");
 		return returnImg;
 	}
 

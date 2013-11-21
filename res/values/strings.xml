@@ -12,5 +12,11 @@
     <string name="ipAddressLabel">NxtAR IP Address</string>
     <string name="badIpToast">Invalid IP address</string>
     <string name="emptyIpToast">Fill out the IP address field</string>
+    <string name="wifi_on_title">This app requires WiFi</string>
+    <string name="wifi_on_msg">Turn on the WiFi?</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="wifi_on_button">Turn on</string>
+    <string name="wifi_on_success">The Wifi radio is on now</string>
+    <string name="wifi_on_fail">This app cannot work without wifi. Closing.</string>
 
 </resources>

@@ -3,30 +3,27 @@ package ve.ucv.ciens.ccg.nxtcam.utils;
 import android.util.Log;
 
 public abstract class Logger {
-	public static enum LOG_TYPES{ DEBUG, INFO, WARN, ERROR, VERBOSE, WTF }
-	
-	public static void log(LOG_TYPES log_type, String tag, String msg){
-		if(ProjectConstants.DEBUG){
-			switch(log_type){
-			case DEBUG:
-				Log.d(tag, msg);
-				break;
-			case INFO:
-				Log.i(tag, msg);
-				break;
-			case WARN:
-				Log.w(tag, msg);
-				break;
-			case ERROR:
-				Log.e(tag, msg);
-				break;
-			case VERBOSE:
-				Log.v(tag, msg);
-				break;
-			case WTF:
-				Log.wtf(tag, msg);
-				break;
-			}
-		}
+	public static void log_d(String tag, String msg){
+		if(ProjectConstants.DEBUG) Log.d(tag, msg);
+	}
+
+	public static void log_i(String tag, String msg){
+		if(ProjectConstants.DEBUG) Log.i(tag, msg);
+	}
+
+	public static void log_v(String tag, String msg){
+		if(ProjectConstants.DEBUG) Log.v(tag, msg);
+	}
+
+	public static void log_w(String tag, String msg){
+		if(ProjectConstants.DEBUG) Log.w(tag, msg);
+	}
+
+	public static void log_e(String tag, String msg){
+		if(ProjectConstants.DEBUG) Log.e(tag, msg);
+	}
+
+	public static void log_wtf(String tag, String msg){
+		if(ProjectConstants.DEBUG) Log.wtf(tag, msg);
 	}
 }
