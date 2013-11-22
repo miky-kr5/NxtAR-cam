@@ -8,7 +8,7 @@
     <string name="camera_failure">Camera could not be opened</string>
     <string name="title_activity_cam">CamActivity</string>
     <string name="get_server_button">Connect with NxtAR</string>
-    <string name="start_button">Connect with controller device</string>
+    <string name="start_button">Start video streaming</string>
     <string name="ipAddressLabel">NxtAR IP Address</string>
     <string name="badIpToast">Invalid IP address</string>
     <string name="emptyIpToast">Fill out the IP address field</string>
@@ -16,7 +16,14 @@
     <string name="wifi_on_msg">Turn on the WiFi?</string>
     <string name="cancel_button">Cancel</string>
     <string name="wifi_on_button">Turn on</string>
-    <string name="wifi_on_success">The Wifi radio is on now</string>
-    <string name="wifi_on_fail">This app cannot work without wifi. Closing.</string>
+    <string name="wifi_on_success">The WiFi radio is on now</string>
+    <string name="wifi_on_fail">This app cannot work without WiFi, closing</string>
+    <string name="bt_no_support">This device does not support Bluetooth</string>
+    <string name="bt_on_fail">This app cannot work without Bluetooth, closing</string>
+    <string name="lens_icon">Image lens icon</string>
+    <string name="robot_pair_button">Connect with robot</string>
+    <string name="robot_choice">Pick a robot</string>
+    <string name="conn_established">Successfully connected with the robot</string>
+    <string name="conn_failed">Could not connect with the robot</string>
 
 </resources>

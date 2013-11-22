@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
-import java.util.UUID;
 
-import ve.ucv.ciens.ccg.nxtcam.MainActivity;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
+import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -22,17 +21,14 @@ import android.util.Log;
  */
 public class BTCommunicator{
 	private static final String TAG = "NXT_TEST_BTCOMM";
-	private final String CLASS_NAME = MainActivity.class.getSimpleName();
-
-	private static final UUID SERIAL_PORT_SERVICE_CLASS_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-	private static final String OUI_LEGO = "00:16:53";
+	private final String CLASS_NAME = BTCommunicator.class.getSimpleName();
 
 	private boolean connected;
-	private BluetoothAdapter bt_adapter = null;
-	private BluetoothSocket bt_socket = null;
-	private OutputStream nxt_out_stream = null;
-	private InputStream nxt_in_stream = null;
-	
+	private BluetoothAdapter btAdapter = null;
+	private BluetoothSocket btSocket = null;
+	private OutputStream nxtOutputStream = null;
+	private InputStream nxtInputStream = null;
+
 	private static class SingletonHolder{
 		public static final BTCommunicator INSTANCE = new BTCommunicator();
 	}
@@ -51,10 +47,10 @@ public class BTCommunicator{
 	 */
 	private BTCommunicator(){
 		connected = false;
-		bt_adapter = BluetoothAdapter.getDefaultAdapter();
-		bt_socket = null;
-		nxt_in_stream = null;
-		nxt_out_stream = null;
+		btAdapter = BluetoothAdapter.getDefaultAdapter();
+		btSocket = null;
+		nxtInputStream = null;
+		nxtOutputStream = null;
 	}
 
 	/**
@@ -63,7 +59,7 @@ public class BTCommunicator{
 	 * @return true if the default Bluetooth adapter exists, otherwise false. 
 	 */
 	public boolean isBTSupported(){
-		return bt_adapter != null;
+		return btAdapter != null;
 	}
 
 	/**
@@ -81,7 +77,7 @@ public class BTCommunicator{
 	 * @see android.bluetooth.BluetoothAdapter
 	 */
 	public boolean isBTEnabled(){
-		return bt_adapter.isEnabled();
+		return btAdapter.isEnabled();
 	}
 
 	/**
@@ -90,7 +86,7 @@ public class BTCommunicator{
 	 * @see android.bluetooth.BluetoothAdapter
 	 */
 	public void disableBT(){
-		bt_adapter.disable();
+		btAdapter.disable();
 	}
 
 	/**
@@ -99,7 +95,7 @@ public class BTCommunicator{
 	 * @return A set containing all devices paired to this device.
 	 */
 	public Set<BluetoothDevice> getPairedDevices(){
-		return bt_adapter.getBondedDevices();
+		return btAdapter.getBondedDevices();
 	}
 
 	/**
@@ -108,42 +104,42 @@ public class BTCommunicator{
 	 * Verifies if the target device is a valid NXT robot by checking agains Lego's OUI.
 	 * Also creates the socket and the streams associated with the connection
 	 * 
-	 * @param mac_address	The mac address of the target device.
+	 * @param macAddress	The mac address of the target device.
 	 * @return true if the connection was established succesfully, otherwise false.
 	 * @throws IOException
 	 */
-	public boolean establishConnection(String mac_address) throws IOException{
-		if (!bt_adapter.isEnabled()){
+	public boolean establishConnection(String macAddress) throws IOException{
+		if (!btAdapter.isEnabled()){
 			return false;
 		}
 		if(connected){
 			return false;
 		}
-		if(bt_adapter.isEnabled()){
-			if(mac_address == "NONE"){
+		if(btAdapter.isEnabled()){
+			if(macAddress == "NONE"){
 				return false;
 			}else{
-				if(mac_address.substring(0, 8).compareTo(OUI_LEGO) != 0){
-					Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Not a Lego MAC. Prefix : " + mac_address.substring(0, 8) + " :: OUI : " + OUI_LEGO);
+				if(macAddress.substring(0, 8).compareTo(ProjectConstants.OUI_LEGO) != 0){
+					Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Not a Lego MAC. Prefix : " + macAddress.substring(0, 8) + " :: OUI : " + ProjectConstants.OUI_LEGO);
 					return false;
 				}else{
 					try{
-						Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Getting device with mac address: " + mac_address);
+						Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Getting device with mac address: " + macAddress);
 						BluetoothDevice nxtDevice = null;
-						nxtDevice = bt_adapter.getRemoteDevice(mac_address);
+						nxtDevice = btAdapter.getRemoteDevice(macAddress);
 						if (nxtDevice == null) {
 							Logger.log_e(TAG, CLASS_NAME + ".establishConnection() :: No device found.");
 							throw new IOException();
 						}
 
 						Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Opening socket.");
-						bt_socket = nxtDevice.createRfcommSocketToServiceRecord(SERIAL_PORT_SERVICE_CLASS_UUID);
+						btSocket = nxtDevice.createRfcommSocketToServiceRecord(ProjectConstants.SERIAL_PORT_SERVICE_CLASS_UUID);
 						Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Connecting.");
-						bt_socket.connect();
+						btSocket.connect();
 
 						Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Opening IO streams.");
-						nxt_in_stream = bt_socket.getInputStream();
-						nxt_out_stream = bt_socket.getOutputStream();
+						nxtInputStream = btSocket.getInputStream();
+						nxtOutputStream = btSocket.getOutputStream();
 
 						Logger.log_d(TAG, CLASS_NAME + ".establishConnection() :: Connection established.");
 						connected = true;
@@ -171,12 +167,12 @@ public class BTCommunicator{
 	 */
 	public boolean stopConnection() throws IOException{
 		try{
-			if(bt_socket != null){
+			if(btSocket != null){
 				Logger.log_d(TAG, CLASS_NAME + ".stopConnection() :: Closing connection.");
-				bt_socket.close();
-				bt_socket = null;
-				nxt_in_stream = null;
-				nxt_out_stream = null;
+				btSocket.close();
+				btSocket = null;
+				nxtInputStream = null;
+				nxtOutputStream = null;
 				connected = false;
 				Logger.log_d(TAG, CLASS_NAME + ".stopConnection() :: Connection closed.");
 				return true;
@@ -198,7 +194,7 @@ public class BTCommunicator{
 	public synchronized void writeMessage(byte[] message) throws IOException{
 		if(connected){
 			try{
-				nxt_out_stream.write(message);
+				nxtOutputStream.write(message);
 			}catch(IOException e){
 				Logger.log_e(TAG, CLASS_NAME + ".writeMessage()");
 				Logger.log_e(TAG, Log.getStackTraceString(e));
@@ -220,7 +216,7 @@ public class BTCommunicator{
 				for(int i = 0; i < message.length; ++i){
 					message[i] = 0x00;
 				}
-				nxt_in_stream.read(message, 0, bytes);
+				nxtInputStream.read(message, 0, bytes);
 				return message;
 			}catch(IOException e){
 				Logger.log_e(TAG, CLASS_NAME + ".readMessage()");
