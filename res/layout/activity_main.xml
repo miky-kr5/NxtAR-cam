@@ -13,8 +13,9 @@
         android:id="@+id/connectButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/imageView1"
-        android:layout_centerHorizontal="true"
+        android:layout_alignLeft="@+id/startButton"
+        android:layout_alignRight="@+id/startButton"
+        android:layout_centerVertical="true"
         android:gravity="center"
         android:onClick="connectWithRobot"
         android:text="@string/robot_pair_button" />
@@ -23,21 +24,10 @@
         android:id="@+id/startButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/connectButton"
-        android:layout_alignRight="@+id/connectButton"
         android:layout_below="@+id/connectButton"
+        android:layout_centerHorizontal="true"
         android:gravity="center"
         android:onClick="startConnections"
         android:text="@string/start_button" />
-
-    <ImageView
-        android:id="@+id/imageView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="60dp"
-        android:contentDescription="@string/lens_icon"
-        android:src="@drawable/camera_lens" />
 
 </RelativeLayout>

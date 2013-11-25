@@ -37,7 +37,6 @@ import android.widget.Toast;
  * datagram carrying the string "NxtAR server here!" is received.
  * 
  * @author miky
- *
  */
 public class MainActivity extends Activity implements WifiOnDialogListener, ConnectRobotDialogListener{
 	// Cosntant fields.
@@ -107,6 +106,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 
 	@Override
 	public void onDestroy(){
+		super.onDestroy();
 		if(btManager.isConnected()){
 			try{
 				btManager.stopConnection();
