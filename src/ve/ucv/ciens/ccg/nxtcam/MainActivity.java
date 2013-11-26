@@ -14,6 +14,7 @@ import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
 import android.app.DialogFragment;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
@@ -47,6 +48,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	// Gui components
 	private Button startButton;
 	private Button connectButton;
+	private ProgressDialog progressDialog;
 
 	// Resources.
 	private BTCommunicator btManager;
@@ -164,6 +166,9 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 			wifiOnByMe = false;
 	}
 
+	/**
+	 * Shows a WifiOnDialog.
+	 */
 	private void enableWifi(){
 		if(!wifiManager.isWifiEnabled()){
 			DialogFragment wifiOn = new WifiOnDialog();
@@ -172,6 +177,9 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		}
 	}
 
+	/**
+	 * Launches the standard Bluetooth enable activity.
+	 */
 	private void enableBT(){
 		Logger.log_d(TAG, CLASS_NAME + ".enableBT() :: Enabling the Bluetooth radio.");
 		Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -179,8 +187,97 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		btOnByMe = true;
 	}
 
+	/**
+	 * Commodity method for showing toasts from an AsyncTask.
+	 * 
+	 * @param stringId The id of the string resource to show on the toast.
+	 * @param length Time to show the toast.
+	 */
 	protected void showToast(int stringId, int length){
 		Toast.makeText(this, stringId, length).show();
+	}
+
+	/**
+	 * Commodity method that builds an standard Android progress dialog.
+	 * 
+	 * The dialog is created as not cancellable and uses an undeterminate spinner as visual style.
+	 * 
+	 * @param msg The descriptive text shown by the dialog.
+	 * @return The built dialog.
+	 */
+	private ProgressDialog buildProgressDialog(String msg){
+		ProgressDialog dialog = new ProgressDialog(this);
+		dialog.setMessage(msg);
+		dialog.setCancelable(false);
+		dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		dialog.setProgress(0);
+		return dialog;
+	}
+
+	/**
+	 * Listener method for the WifiOnDialog.
+	 * 
+	 * This method is called when the user chooses to accept the dialog. It just shows an information
+	 * message with a toast and marks the WiFi radio as turned on by the application.
+	 * 
+	 * @param dialog The dialog that called this method. 
+	 */
+	@Override
+	public void onWifiOnDialogPositiveClick(DialogFragment dialog) {
+		Toast.makeText(this, R.string.wifi_on_success, Toast.LENGTH_SHORT).show();
+		wifiOnByMe = true;
+	}
+
+	/**
+	 * Listener method for the WifiOnDialog.
+	 * 
+	 * This method is called when the user chooses to cancel the dialog. It just shows an error message
+	 * with a toast and finishes the application.
+	 * 
+	 * @param dialog The dialog that called this method. 
+	 */
+	@Override
+	public void onWifiOnDialogNegativeClick(DialogFragment dialog) {
+		Toast.makeText(this, R.string.wifi_on_fail, Toast.LENGTH_LONG).show();
+		finish();
+	};
+
+	/**
+	 * Shows the robot selection dialog.
+	 * 
+	 * @param view The view that called this method.
+	 */
+	public void connectWithRobot(View view){
+		if(btManager.isBTEnabled()){
+			DialogFragment connectBot = new ConnectRobotDialog();
+			connectBot.show(getFragmentManager(), "connect_bot");
+		}
+	}
+
+	/**
+	 * Launches the service discovery task.
+	 */
+	public void startConnections(View view){
+		ServiceDiscoveryTask serviceDiscovery = new ServiceDiscoveryTask();
+		serviceDiscovery.execute();
+	}
+
+	/**
+	 * Listener method for the ConnectRobotDialog.
+	 * 
+	 * When a user selects a robot to connect to in the dialog, this method launches the connection setup task
+	 * defined in the ConnectRobotTask.
+	 * 
+	 * @param dialog The dialog that called this method.
+	 * @param robot The robot selected by the user in the format NAME\nMAC_ADDRESS
+	 */
+	@Override
+	public void onConnectRobotDialogItemClick(DialogFragment dialog, String robot) {
+		String macAddress = robot.substring(robot.indexOf('\n')+1);
+		Logger.log_d(TAG, CLASS_NAME + ".onConnectRobotDialogItemClick() :: MAC address: " + macAddress);
+		connectButton.setEnabled(false);
+		ConnectRobotTask robotTask = new ConnectRobotTask(macAddress);
+		robotTask.execute();
 	}
 
 	/**
@@ -205,6 +302,13 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 			}catch(IOException io){
 				Logger.log_e(TAG ,CLASS_NAME + ".ServiceDiscoveryTask() :: " + io.getMessage());
 			}
+		}
+
+		@Override
+		protected void onPreExecute(){
+			super.onPreExecute();
+			progressDialog = buildProgressDialog(getString(R.string.serv_wait));
+			progressDialog.show();
 		}
 
 		@Override
@@ -247,6 +351,10 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		@Override
 		protected void onPostExecute(Boolean result){
 			super.onPostExecute(result);
+
+			progressDialog.dismiss();
+			progressDialog = null;
+
 			// If a server was found then start the next activity.
 			if(packet != null)
 				startCamActivity(result, packet.getAddress().getHostAddress());
@@ -255,12 +363,24 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		}
 	}
 
+	/**
+	 * This task handles the establishing of the connection with the NXT robot.
+	 * 
+	 * @author miky
+	 */
 	private class ConnectRobotTask extends AsyncTask<Void, Void, Boolean>{
 		private final String CLASS_NAME = ConnectRobotTask.class.getSimpleName();
 		private String macAddress;
 
 		public ConnectRobotTask(String macAddress){
 			this.macAddress = macAddress;
+		}
+
+		@Override
+		protected void onPreExecute(){
+			super.onPreExecute();
+			progressDialog = buildProgressDialog(getString(R.string.bt_wait));
+			progressDialog.show();
 		}
 
 		@Override
@@ -278,6 +398,11 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 
 		@Override
 		protected void onPostExecute(Boolean result){
+			super.onPostExecute(result);
+
+			progressDialog.dismiss();
+			progressDialog = null;
+
 			if(result){
 				Logger.log_d(TAG, CLASS_NAME + "doInBackground() :: Connection successful.");
 				showToast(R.string.conn_established, Toast.LENGTH_SHORT);
@@ -287,38 +412,5 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 				connectButton.setEnabled(true);
 			}
 		}
-	}
-
-	@Override
-	public void onWifiOnDialogPositiveClick(DialogFragment dialog) {
-		Toast.makeText(this, R.string.wifi_on_success, Toast.LENGTH_SHORT).show();
-		wifiOnByMe = true;
-	}
-
-	@Override
-	public void onWifiOnDialogNegativeClick(DialogFragment dialog) {
-		Toast.makeText(this, R.string.wifi_on_fail, Toast.LENGTH_LONG).show();
-		finish();
-	};
-
-	public void connectWithRobot(View view){
-		if(btManager.isBTEnabled()){
-			DialogFragment connectBot = new ConnectRobotDialog();
-			connectBot.show(getFragmentManager(), "connect_bot");
-		}
-	}
-
-	public void startConnections(View view){
-		ServiceDiscoveryTask serviceDiscovery = new ServiceDiscoveryTask();
-		serviceDiscovery.execute();
-	}
-
-	@Override
-	public void onConnectRobotDialogItemClick(DialogFragment dialog, String item) {
-		String macAddress = item.substring(item.indexOf('\n')+1);
-		Logger.log_d(TAG, CLASS_NAME + ".onConnectRobotDialogItemClick() :: MAC address: " + macAddress);
-		connectButton.setEnabled(false);
-		ConnectRobotTask robotTask = new ConnectRobotTask(macAddress);
-		robotTask.execute();
 	}
 }

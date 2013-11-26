@@ -25,5 +25,7 @@
     <string name="robot_choice">Escoja un robot</string>
     <string name="conn_established">Conexión exitosa con el robot</string>
     <string name="conn_failed">No se pudo conectar con el robot</string>
+    <string name="bt_wait">Por favor espere por la conexión</string>
+    <string name="serv_wait">Por favor espere, buscando dispositivo de control</string>
 
 </resources>
