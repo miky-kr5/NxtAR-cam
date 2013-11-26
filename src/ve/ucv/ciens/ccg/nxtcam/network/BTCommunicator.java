@@ -20,7 +20,7 @@ import android.util.Log;
  * @since 2012-10-15
  */
 public class BTCommunicator{
-	private static final String TAG = "NXT_TEST_BTCOMM";
+	private static final String TAG = "NXTCAM_BTCOMM";
 	private final String CLASS_NAME = BTCommunicator.class.getSimpleName();
 
 	private boolean connected;

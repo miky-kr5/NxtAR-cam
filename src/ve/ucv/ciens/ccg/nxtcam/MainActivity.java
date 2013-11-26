@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.Socket;
 
 import ve.ucv.ciens.ccg.nxtcam.dialogs.ConnectRobotDialog;
 import ve.ucv.ciens.ccg.nxtcam.dialogs.ConnectRobotDialog.ConnectRobotDialogListener;
@@ -314,7 +315,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		@Override
 		protected Boolean doInBackground(Void... params){
 			boolean result, done = false;
-			byte[] buffer = (new String("Server is here")).getBytes();
+			byte[] buffer = (new String("NxtAR server here!")).getBytes();
 
 			// Create a buffer and tell Android we want to receive multicast datagrams.
 			packet = new DatagramPacket(buffer, buffer.length);
@@ -330,8 +331,14 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 					udpSocket.receive(packet);
 					Logger.log_d(TAG, CLASS_NAME + ".run() :: Found a server at " + packet.getAddress().getHostAddress());
 					String received = new String(packet.getData());
+					Logger.log_d(TAG, CLASS_NAME + ".doInBackground() :: Packet payload is\n" + received);
 					if(received.compareTo("NxtAR server here!") == 0)
 						done = true;
+					Socket client1, client2;
+					client1 = new Socket(packet.getAddress(), ProjectConstants.SERVER_TCP_PORT_1);
+					client1.close();
+					client2 = new Socket(packet.getAddress(), ProjectConstants.SERVER_TCP_PORT_2);
+					client2.close();
 				}
 				result = true;
 			}catch(IOException io){
@@ -356,10 +363,15 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 			progressDialog = null;
 
 			// If a server was found then start the next activity.
-			if(packet != null)
-				startCamActivity(result, packet.getAddress().getHostAddress());
-			else
-				startCamActivity(false, null);
+			startButton.setEnabled(false);
+
+			if(packet != null){
+				showToast(R.string.serv_connected, Toast.LENGTH_SHORT);
+				//	startCamActivity(result, packet.getAddress().getHostAddress());
+			}else{
+				showToast(R.string.serv_fail, Toast.LENGTH_SHORT);
+				//	startCamActivity(false, null);
+			}
 		}
 	}
 
@@ -406,6 +418,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 			if(result){
 				Logger.log_d(TAG, CLASS_NAME + "doInBackground() :: Connection successful.");
 				showToast(R.string.conn_established, Toast.LENGTH_SHORT);
+				startButton.setEnabled(true);
 			}else{
 				Logger.log_d(TAG, CLASS_NAME + "doInBackground() :: Connection failed.");
 				showToast(R.string.conn_failed, Toast.LENGTH_LONG);

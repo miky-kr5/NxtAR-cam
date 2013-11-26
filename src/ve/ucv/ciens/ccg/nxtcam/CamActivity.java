@@ -120,6 +120,8 @@ public class CamActivity extends Activity{
 
 		@Override
 		protected void onPostExecute(Camera result) {
+			super.onPostExecute(result);
+			
 			hwCamera = result;
 			if(result != null){
 				Logger.log_d(TAG, CLASS_NAME + ".onPostExecute() :: Camera successfully opened");
@@ -128,8 +130,6 @@ public class CamActivity extends Activity{
 				Toast.makeText(getApplicationContext(), R.string.camera_failure, Toast.LENGTH_LONG).show();
 			}
 			startCameraPreview();
-
-			super.onPostExecute(result);
 		}
 	};
 }
