@@ -22,32 +22,32 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 	private final String TAG = "SURFVIEW";
 	private final String CLASS_NAME = CameraPreview.class.getSimpleName();
 
-	private Size mPreviewSize;
-	private List<Size> mSupportedPreviewSizes;
-	private CameraImageMonitor camMonitor;
+	private Size previewSize;
+	private List<Size> supportedPreviewSizes;
+	private CameraImageMonitor imgMonitor;
 	private Activity parentActivity;
-	private SurfaceView mSurfaceView;
-	private SurfaceHolder mHolder;
-	private Camera mCamera;
+	private SurfaceView surfaceView;
+	private SurfaceHolder holder;
+	private Camera camera;
 
 	@SuppressWarnings("deprecation")
 	public CameraPreview(Context context, Camera camera){
 		super(context);
 		parentActivity = (Activity)context;
 
-		mSurfaceView = new SurfaceView(context);
-		mHolder = mSurfaceView.getHolder();
-		mHolder.addCallback(this);
+		surfaceView = new SurfaceView(context);
+		holder = surfaceView.getHolder();
+		holder.addCallback(this);
 
 		if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.HONEYCOMB)
-			mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+			holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 	}
 
 	public void setCamera(Camera camera){
-		mCamera = camera;
-		if(mCamera != null){
-			camMonitor = CameraImageMonitor.getInstance();
-			mSupportedPreviewSizes = mCamera.getParameters().getSupportedPreviewSizes();
+		this.camera = camera;
+		if(this.camera != null){
+			imgMonitor = CameraImageMonitor.getInstance();
+			supportedPreviewSizes = this.camera.getParameters().getSupportedPreviewSizes();
 			requestLayout();
 		}
 	}
@@ -55,43 +55,42 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 	public void surfaceCreated(SurfaceHolder holder){
 		// The Surface has been created, now tell the camera where to draw the preview.
 		try {
-			if(mCamera != null){
-				mCamera.setPreviewDisplay(holder);
-			}
+			if(camera != null)
+				camera.setPreviewDisplay(holder);
 		} catch (IOException e) {
 			Logger.log_d(TAG, "Error setting camera preview: " + e.getMessage());
 		}
 	}
 
 	public void surfaceDestroyed(SurfaceHolder holder){
-		if(mCamera != null){
-			mCamera.stopPreview();
-		}
+		if(camera != null)
+			camera.stopPreview();
 	}
 
-	public void surfaceChanged(SurfaceHolder holder, int format, int w, int h){
-		if(mHolder.getSurface() == null){
-			return;
-		}
+	public void surfaceChanged(SurfaceHolder tmpHolder, int format, int w, int h){
+		int result;
+		int rotation;
+		int degrees = 0;
+		Camera.Parameters camParams;
 
-		try{
-			mCamera.stopPreview();
-		}catch (Exception e){ }
+		if(this.holder.getSurface() == null || camera == null)
+			return;
+
+		try{ camera.stopPreview(); }catch (Exception e){ }
 
 		requestLayout();
 
-		Camera.Parameters camParams = mCamera.getParameters();
+		camParams = camera.getParameters();
 		/*Size optimal = getOptimalPreviewSize(camParams.getSupportedPreviewSizes(), w, h);
 		if(ProjectConstants.DEBUG)
 			Log.d(TAG, CLASS_NAME + ".surfaceChanged() :: Preview size set at (" + optimal.width + ", " + optimal.height + ")");*/
-		camParams.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
-		mCamera.setParameters(camParams);
+		camParams.setPreviewSize(previewSize.width, previewSize.height);
+		camera.setParameters(camParams);
 
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 		android.hardware.Camera.getCameraInfo(0, info);
-		int rotation = parentActivity.getWindowManager().getDefaultDisplay().getRotation();
+		rotation = parentActivity.getWindowManager().getDefaultDisplay().getRotation();
 
-		int degrees = 0;
 		switch (rotation) {
 		case Surface.ROTATION_0: degrees = 0; break;
 		case Surface.ROTATION_90: degrees = 90; break;
@@ -99,21 +98,18 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 		case Surface.ROTATION_270: degrees = 270; break;
 		}
 
-		int result;
 		if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
 			result = (info.orientation + degrees) % 360;
 			result = (360 - result) % 360;  // compensate the mirror
 		} else {  // back-facing
 			result = (info.orientation - degrees + 360) % 360;
 		}
-		mCamera.setDisplayOrientation(result);
-
-		mCamera.setPreviewCallback(this);
+		camera.setDisplayOrientation(result);
+		camera.setPreviewCallback(this);
 
 		try {
-			mCamera.setPreviewDisplay(mHolder);
-			mCamera.startPreview();
-
+			camera.setPreviewDisplay(this.holder);
+			camera.startPreview();
 		}catch (Exception e){
 			Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Error starting camera preview: " + e.getMessage());
 		}
@@ -122,13 +118,14 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera){
 		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Preview received");
-		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Frame has" + (camMonitor.hasChanged() ? "" : " not") + " changed.");
-		if(!camMonitor.hasChanged())
-			camMonitor.setImageData(data);
+		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Frame has" + (imgMonitor.hasChanged() ? "" : " not") + " changed.");
+		if(!imgMonitor.hasChanged())
+			imgMonitor.setImageData(data);
 	}
 
 	public void removePreviewCallback(){
-		mCamera.setPreviewCallback(null);
+		if(camera != null)
+			camera.setPreviewCallback(null);
 	}
 
 	private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
@@ -174,9 +171,9 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 
 			int previewWidth = width;
 			int previewHeight = height;
-			if (mPreviewSize != null) {
-				previewWidth = mPreviewSize.width;
-				previewHeight = mPreviewSize.height;
+			if (previewSize != null) {
+				previewWidth = previewSize.width;
+				previewHeight = previewSize.height;
 			}
 
 			// Center the child SurfaceView within the parent.
@@ -198,8 +195,8 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 		final int height = resolveSize(getSuggestedMinimumHeight(), heightMeasureSpec);
 		setMeasuredDimension(width, height);
 
-		if (mSupportedPreviewSizes != null) {
-			mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
+		if (supportedPreviewSizes != null) {
+			previewSize = getOptimalPreviewSize(supportedPreviewSizes, width, height);
 		}
 	}
 }
