@@ -58,7 +58,7 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 			if(camera != null)
 				camera.setPreviewDisplay(holder);
 		} catch (IOException e) {
-			Logger.log_d(TAG, "Error setting camera preview: " + e.getMessage());
+			Logger.log_e(TAG, CLASS_NAME + ".surfaceCreated() :: Error setting camera preview: " + e.getMessage());
 		}
 	}
 
@@ -73,8 +73,11 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 		int degrees = 0;
 		Camera.Parameters camParams;
 
-		if(this.holder.getSurface() == null || camera == null)
+		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Method started.");
+		if(this.holder.getSurface() == null || camera == null){
+			Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Holder and/or camera are null.");
 			return;
+		}
 
 		try{ camera.stopPreview(); }catch (Exception e){ }
 
@@ -111,7 +114,7 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 			camera.setPreviewDisplay(this.holder);
 			camera.startPreview();
 		}catch (Exception e){
-			Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Error starting camera preview: " + e.getMessage());
+			Logger.log_e(TAG, CLASS_NAME + ".surfaceChanged() :: Error starting camera preview: " + e.getMessage());
 		}
 	}
 
