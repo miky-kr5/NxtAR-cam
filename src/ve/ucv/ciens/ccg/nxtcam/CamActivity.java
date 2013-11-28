@@ -2,6 +2,7 @@ package ve.ucv.ciens.ccg.nxtcam;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
 import ve.ucv.ciens.ccg.nxtcam.network.ImageTransferThread;
+import ve.ucv.ciens.ccg.nxtcam.network.LCPThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import android.app.Activity;
 import android.content.Intent;
@@ -16,12 +17,13 @@ import android.widget.Toast;
 
 public class CamActivity extends Activity{
 	private final String TAG = "NXTCAM_CAM";
-	private final String CLASS_NAME = MainActivity.class.getSimpleName();
-	
+	private final String CLASS_NAME = CamActivity.class.getSimpleName();
+
 	private Camera hwCamera;
 	private CameraPreview cPreview;
 	private CameraSetupTask camSetupTask;
 	private ImageTransferThread imThread;
+	private LCPThread botThread;
 	private String serverIp;
 
 	/*******************
@@ -31,12 +33,13 @@ public class CamActivity extends Activity{
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		
+
 		cPreview = new CameraPreview(this, hwCamera);
 		setContentView(cPreview);
-		
+
 		Intent intent = getIntent();
 		serverIp = intent.getStringExtra("address");
+		imThread = new ImageTransferThread(serverIp);
 	}
 
 	@Override
@@ -69,20 +72,26 @@ public class CamActivity extends Activity{
 
 		camSetupTask = new CameraSetupTask();
 		camSetupTask.execute();
-		
-		imThread = new ImageTransferThread(serverIp);
-		imThread.start();
+
+		// imThread.start();
 	}
 
 	@Override
 	public void onPause(){
 		super.onPause();
 
-		// TODO: Disconnect and destroy the imThread object.
-		
+		// TODO: pause the imThread and botThread objects.
+
 		cPreview.removePreviewCallback();
 		cPreview.setCamera(null);
 		releaseCamera();
+	}
+	
+	@Override
+	public void onDestroy(){
+		super.onDestroy();
+		// TODO: Destroy the network threads.
+		imThread = null;
 	}
 
 	/******************
@@ -121,7 +130,7 @@ public class CamActivity extends Activity{
 		@Override
 		protected void onPostExecute(Camera result) {
 			super.onPostExecute(result);
-			
+
 			hwCamera = result;
 			if(result != null){
 				Logger.log_d(TAG, CLASS_NAME + ".onPostExecute() :: Camera successfully opened");

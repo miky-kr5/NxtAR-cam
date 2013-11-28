@@ -334,11 +334,6 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 					Logger.log_d(TAG, CLASS_NAME + ".doInBackground() :: Packet payload is\n" + received);
 					if(received.compareTo("NxtAR server here!") == 0)
 						done = true;
-					Socket client1, client2;
-					client1 = new Socket(packet.getAddress(), ProjectConstants.SERVER_TCP_PORT_1);
-					client1.close();
-					client2 = new Socket(packet.getAddress(), ProjectConstants.SERVER_TCP_PORT_2);
-					client2.close();
 				}
 				result = true;
 			}catch(IOException io){
@@ -367,10 +362,10 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 
 			if(packet != null){
 				showToast(R.string.serv_connected, Toast.LENGTH_SHORT);
-				//	startCamActivity(result, packet.getAddress().getHostAddress());
+				startCamActivity(result, packet.getAddress().getHostAddress());
 			}else{
 				showToast(R.string.serv_fail, Toast.LENGTH_SHORT);
-				//	startCamActivity(false, null);
+				startCamActivity(false, null);
 			}
 		}
 	}
