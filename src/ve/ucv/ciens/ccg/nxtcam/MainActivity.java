@@ -4,11 +4,19 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.UnknownHostException;
+import java.net.Socket;
 
+import ve.ucv.ciens.ccg.nxtcam.dialogs.ConnectRobotDialog;
+import ve.ucv.ciens.ccg.nxtcam.dialogs.ConnectRobotDialog.ConnectRobotDialogListener;
+import ve.ucv.ciens.ccg.nxtcam.dialogs.WifiOnDialog;
+import ve.ucv.ciens.ccg.nxtcam.dialogs.WifiOnDialog.WifiOnDialogListener;
+import ve.ucv.ciens.ccg.nxtcam.network.BTCommunicator;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
+import android.app.DialogFragment;
+import android.app.ProgressDialog;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.net.wifi.WifiManager;
@@ -18,7 +26,6 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 /**
@@ -32,22 +39,25 @@ import android.widget.Toast;
  * datagram carrying the string "NxtAR server here!" is received.
  * 
  * @author miky
- *
  */
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements WifiOnDialogListener, ConnectRobotDialogListener{
 	// Cosntant fields.
 	private final String TAG = "NXTCAM_MAIN";
 	private final String CLASS_NAME = MainActivity.class.getSimpleName();
+	private static final int REQUEST_ENABLE_BT = 1;
 
-	// Gui components.
+	// Gui components
 	private Button startButton;
-	//private TextView ipField;
+	private Button connectButton;
+	private ProgressDialog progressDialog;
 
 	// Resources.
+	private BTCommunicator btManager;
 	private WifiManager wifiManager;
 
 	// Variables.
 	private boolean wifiOnByMe;
+	private boolean btOnByMe;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -56,32 +66,57 @@ public class MainActivity extends Activity {
 
 		// Set up fields.
 		wifiOnByMe = false;
+		btOnByMe = false;
 
 		// Set up gui components.
 		startButton = (Button)findViewById(R.id.startButton);
-		startButton.setOnClickListener(startClickListener);
-		// ipField = (TextView)findViewById(R.id.ipAddressField);
+		startButton.setEnabled(false);
+		connectButton = (Button)findViewById(R.id.connectButton);
 
 		// Set up services.
+		btManager = BTCommunicator.getInstance();
 		wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
-		if(!wifiManager.isWifiEnabled())
-			setWifi(true);
+
+		if(!btManager.isBTSupported()){
+			// El dispositivo no soporta BlueTooth.
+			Toast.makeText(this, R.string.bt_no_support, Toast.LENGTH_LONG).show();
+			finish();
+			System.exit(0);
+		}
 	}
 
 	@Override
 	public void onResume(){
 		super.onResume();
 
-		if(!wifiManager.isWifiEnabled())
-			setWifi(true);
+		if(!btManager.isBTEnabled()){
+			enableBT();
+		}else if(btManager.isBTEnabled() && !wifiManager.isWifiEnabled()){
+			enableWifi();
+		}
 	}
 
 	@Override
 	public void onPause(){
 		super.onPause();
 
+		if(btManager.isBTEnabled() && btOnByMe)
+			btManager.disableBT();
+
 		if(wifiManager.isWifiEnabled() && wifiOnByMe)
 			setWifi(false);
+	}
+
+	@Override
+	public void onDestroy(){
+		super.onDestroy();
+		if(btManager.isConnected()){
+			try{
+				btManager.stopConnection();
+			}catch(IOException io){
+				Logger.log_e(TAG, CLASS_NAME + ".onDestroy() :: Error closing the connection with the robot: " + io.getMessage());
+			}
+		}
 	}
 
 	@Override
@@ -89,6 +124,15 @@ public class MainActivity extends Activity {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
+	}
+
+	protected void onActivityResult(int request, int result, Intent data){
+		if(request == REQUEST_ENABLE_BT && result == RESULT_OK){
+			if(!wifiManager.isWifiEnabled())
+				enableWifi();
+		}else{
+			Toast.makeText(this, R.string.bt_on_fail, Toast.LENGTH_LONG).show();
+		}
 	}
 
 	/**
@@ -99,12 +143,12 @@ public class MainActivity extends Activity {
 	 */
 	private void startCamActivity(boolean serverFound, String ipAddress){
 		if(serverFound){
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".startCamActivity() :: Launching camera activity.");
+			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Launching camera activity.");
 			Intent intent = new Intent(this, CamActivity.class);
 			intent.putExtra("address", ipAddress);
 			startActivity(intent);
 		}else{
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".startCamActivity() :: Cannot launch camera activity.");
+			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Cannot launch camera activity.");
 			Toast.makeText(this, R.string.badIpToast, Toast.LENGTH_SHORT).show();
 		}
 	}
@@ -116,35 +160,126 @@ public class MainActivity extends Activity {
 	 */
 	private void setWifi(boolean radioState){
 		wifiManager.setWifiEnabled(radioState);
-		Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".setWifi() :: setting wifi to " + (radioState ? "on" : "off"));
+		Logger.log_d(TAG, CLASS_NAME + ".setWifi() :: setting wifi to " + (radioState ? "on" : "off"));
 		if(radioState)
 			wifiOnByMe = true;
 		else
 			wifiOnByMe = false;
 	}
 
-	/*private void validateIpAddress(){
-		if(ipField.getText().toString().compareTo("") != 0){
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "validateIpAddress() :: Launching verification task.");
-			VerifyIpAddressTask verifyIp = new VerifyIpAddressTask();
-			verifyIp.execute(ipField.getText().toString());
-		}else{
-			Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "validateIpAddress() :: Ip address field is empty.");
-			Toast.makeText(this, R.string.emptyIpToast, Toast.LENGTH_SHORT).show();
+	/**
+	 * Shows a WifiOnDialog.
+	 */
+	private void enableWifi(){
+		if(!wifiManager.isWifiEnabled()){
+			DialogFragment wifiOn = new WifiOnDialog();
+			((WifiOnDialog)wifiOn).setWifiManager(wifiManager);
+			wifiOn.show(getFragmentManager(), "wifi_on");
 		}
-	}*/
+	}
 
 	/**
-	 * Event listener for the connection button.
+	 * Launches the standard Bluetooth enable activity.
 	 */
-	private final View.OnClickListener startClickListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//validateIpAddress();
-			ServiceDiscoveryTask serviceDiscovery = new ServiceDiscoveryTask();
-			serviceDiscovery.execute();
-		}
+	private void enableBT(){
+		Logger.log_d(TAG, CLASS_NAME + ".enableBT() :: Enabling the Bluetooth radio.");
+		Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+		startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+		btOnByMe = true;
+	}
+
+	/**
+	 * Commodity method for showing toasts from an AsyncTask.
+	 * 
+	 * @param stringId The id of the string resource to show on the toast.
+	 * @param length Time to show the toast.
+	 */
+	protected void showToast(int stringId, int length){
+		Toast.makeText(this, stringId, length).show();
+	}
+
+	/**
+	 * Commodity method that builds an standard Android progress dialog.
+	 * 
+	 * The dialog is created as not cancellable and uses an undeterminate spinner as visual style.
+	 * 
+	 * @param msg The descriptive text shown by the dialog.
+	 * @return The built dialog.
+	 */
+	private ProgressDialog buildProgressDialog(String msg){
+		ProgressDialog dialog = new ProgressDialog(this);
+		dialog.setMessage(msg);
+		dialog.setCancelable(false);
+		dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		dialog.setProgress(0);
+		return dialog;
+	}
+
+	/**
+	 * Listener method for the WifiOnDialog.
+	 * 
+	 * This method is called when the user chooses to accept the dialog. It just shows an information
+	 * message with a toast and marks the WiFi radio as turned on by the application.
+	 * 
+	 * @param dialog The dialog that called this method. 
+	 */
+	@Override
+	public void onWifiOnDialogPositiveClick(DialogFragment dialog) {
+		Toast.makeText(this, R.string.wifi_on_success, Toast.LENGTH_SHORT).show();
+		wifiOnByMe = true;
+	}
+
+	/**
+	 * Listener method for the WifiOnDialog.
+	 * 
+	 * This method is called when the user chooses to cancel the dialog. It just shows an error message
+	 * with a toast and finishes the application.
+	 * 
+	 * @param dialog The dialog that called this method. 
+	 */
+	@Override
+	public void onWifiOnDialogNegativeClick(DialogFragment dialog) {
+		Toast.makeText(this, R.string.wifi_on_fail, Toast.LENGTH_LONG).show();
+		finish();
 	};
+
+	/**
+	 * Shows the robot selection dialog.
+	 * 
+	 * @param view The view that called this method.
+	 */
+	public void connectWithRobot(View view){
+		if(btManager.isBTEnabled()){
+			DialogFragment connectBot = new ConnectRobotDialog();
+			connectBot.show(getFragmentManager(), "connect_bot");
+		}
+	}
+
+	/**
+	 * Launches the service discovery task.
+	 */
+	public void startConnections(View view){
+		ServiceDiscoveryTask serviceDiscovery = new ServiceDiscoveryTask();
+		serviceDiscovery.execute();
+	}
+
+	/**
+	 * Listener method for the ConnectRobotDialog.
+	 * 
+	 * When a user selects a robot to connect to in the dialog, this method launches the connection setup task
+	 * defined in the ConnectRobotTask.
+	 * 
+	 * @param dialog The dialog that called this method.
+	 * @param robot The robot selected by the user in the format NAME\nMAC_ADDRESS
+	 */
+	@Override
+	public void onConnectRobotDialogItemClick(DialogFragment dialog, String robot) {
+		String macAddress = robot.substring(robot.indexOf('\n')+1);
+		Logger.log_d(TAG, CLASS_NAME + ".onConnectRobotDialogItemClick() :: MAC address: " + macAddress);
+		connectButton.setEnabled(false);
+		ConnectRobotTask robotTask = new ConnectRobotTask(macAddress);
+		robotTask.execute();
+	}
 
 	/**
 	 * Asynchronous task for ad hoc UDP service discovery.
@@ -166,14 +301,21 @@ public class MainActivity extends Activity {
 				InetAddress group = InetAddress.getByName(ProjectConstants.MULTICAST_ADDRESS);
 				udpSocket.joinGroup(group);
 			}catch(IOException io){
-				Logger.log(Logger.LOG_TYPES.ERROR, TAG ,CLASS_NAME + ".ServiceDiscoveryTask() :: " + io.getMessage());
+				Logger.log_e(TAG ,CLASS_NAME + ".ServiceDiscoveryTask() :: " + io.getMessage());
 			}
+		}
+
+		@Override
+		protected void onPreExecute(){
+			super.onPreExecute();
+			progressDialog = buildProgressDialog(getString(R.string.serv_wait));
+			progressDialog.show();
 		}
 
 		@Override
 		protected Boolean doInBackground(Void... params){
 			boolean result, done = false;
-			byte[] buffer = (new String("Server is here")).getBytes();
+			byte[] buffer = (new String("NxtAR server here!")).getBytes();
 
 			// Create a buffer and tell Android we want to receive multicast datagrams.
 			packet = new DatagramPacket(buffer, buffer.length);
@@ -187,14 +329,20 @@ public class MainActivity extends Activity {
 			try{
 				while(!done){
 					udpSocket.receive(packet);
-					Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + ".run() :: Found a server at " + packet.getAddress().getHostAddress());
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Found a server at " + packet.getAddress().getHostAddress());
 					String received = new String(packet.getData());
+					Logger.log_d(TAG, CLASS_NAME + ".doInBackground() :: Packet payload is\n" + received);
 					if(received.compareTo("NxtAR server here!") == 0)
 						done = true;
+					Socket client1, client2;
+					client1 = new Socket(packet.getAddress(), ProjectConstants.SERVER_TCP_PORT_1);
+					client1.close();
+					client2 = new Socket(packet.getAddress(), ProjectConstants.SERVER_TCP_PORT_2);
+					client2.close();
 				}
 				result = true;
 			}catch(IOException io){
-				Logger.log(Logger.LOG_TYPES.ERROR, TAG, CLASS_NAME + ".doInBackground() :: " + io.getMessage());
+				Logger.log_e(TAG, CLASS_NAME + ".doInBackground() :: " + io.getMessage());
 				result = false;
 			}
 
@@ -210,33 +358,72 @@ public class MainActivity extends Activity {
 		@Override
 		protected void onPostExecute(Boolean result){
 			super.onPostExecute(result);
+
+			progressDialog.dismiss();
+			progressDialog = null;
+
 			// If a server was found then start the next activity.
-			if(packet != null)
-				startCamActivity(result, packet.getAddress().getHostAddress());
-			else
-				startCamActivity(false, null);
-		}
-	};
+			startButton.setEnabled(false);
 
-	/*	private class VerifyIpAddressTask extends AsyncTask<String, Void, Boolean>{
-		private final String CLASS_NAME = VerifyIpAddressTask.class.getSimpleName();
-
-		@Override
-		protected Boolean doInBackground(String... params) {
-			try{
-				InetAddress.getByName(params[0]);
-				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "doInBackground() :: IP address is valid.");
-				return true;
-			}catch(UnknownHostException uh){
-				Logger.log(Logger.LOG_TYPES.DEBUG, TAG, CLASS_NAME + "doInBackground() :: IP address is not valid.");
-				return false;
+			if(packet != null){
+				showToast(R.string.serv_connected, Toast.LENGTH_SHORT);
+				//	startCamActivity(result, packet.getAddress().getHostAddress());
+			}else{
+				showToast(R.string.serv_fail, Toast.LENGTH_SHORT);
+				//	startCamActivity(false, null);
 			}
 		}
+	}
+
+	/**
+	 * This task handles the establishing of the connection with the NXT robot.
+	 * 
+	 * @author miky
+	 */
+	private class ConnectRobotTask extends AsyncTask<Void, Void, Boolean>{
+		private final String CLASS_NAME = ConnectRobotTask.class.getSimpleName();
+		private String macAddress;
+
+		public ConnectRobotTask(String macAddress){
+			this.macAddress = macAddress;
+		}
 
 		@Override
-		protected void onPostExecute(Boolean result) {
-			super.onPostExecute(result);
-			startCamActivity(result);
+		protected void onPreExecute(){
+			super.onPreExecute();
+			progressDialog = buildProgressDialog(getString(R.string.bt_wait));
+			progressDialog.show();
 		}
-	};*/
+
+		@Override
+		protected Boolean doInBackground(Void... params){
+			boolean connSet;
+			Logger.log_d(TAG, CLASS_NAME + "doInBackground() :: Establishing connection with the robot.");
+			try{
+				connSet = btManager.establishConnection(macAddress);
+			}catch(IOException e){
+				Logger.log_e(TAG, CLASS_NAME + "doInBackground() :: Error during the connection attempt.");
+				connSet = false;
+			}
+			return connSet;
+		}
+
+		@Override
+		protected void onPostExecute(Boolean result){
+			super.onPostExecute(result);
+
+			progressDialog.dismiss();
+			progressDialog = null;
+
+			if(result){
+				Logger.log_d(TAG, CLASS_NAME + "doInBackground() :: Connection successful.");
+				showToast(R.string.conn_established, Toast.LENGTH_SHORT);
+				startButton.setEnabled(true);
+			}else{
+				Logger.log_d(TAG, CLASS_NAME + "doInBackground() :: Connection failed.");
+				showToast(R.string.conn_failed, Toast.LENGTH_LONG);
+				connectButton.setEnabled(true);
+			}
+		}
+	}
 }

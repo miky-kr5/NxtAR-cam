@@ -2,38 +2,32 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:baselineAligned="false"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    android:baselineAligned="false"
     tools:context=".MainActivity" >
+
+    <Button
+        android:id="@+id/connectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/startButton"
+        android:layout_alignRight="@+id/startButton"
+        android:layout_centerVertical="true"
+        android:gravity="center"
+        android:onClick="connectWithRobot"
+        android:text="@string/robot_pair_button" />
 
     <Button
         android:id="@+id/startButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/connectButton"
         android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:onClick="startConnections"
         android:text="@string/start_button" />
 
-    <!--  <EditText
-        android:id="@+id/ipAddressField"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/startButton"
-        android:layout_centerHorizontal="true"
-        android:ems="10"
-        android:inputType="text" /> 
-
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/ipAddressField"
-        android:layout_alignBottom="@+id/ipAddressField"
-        android:layout_toLeftOf="@+id/ipAddressField"
-        android:text="@string/ipAddressLabel" />
-    -->
-    
 </RelativeLayout>
