@@ -7,10 +7,12 @@ public class CameraImageMonitor{
 	private final String CLASS_NAME = CameraImageMonitor.class.getSimpleName();
 
 	private byte[] image;
-	private boolean imgChanged;
+	private boolean imgProduced;
+	private boolean imgConsumed;
 
 	private CameraImageMonitor(){
-		imgChanged = false;
+		imgProduced = false;
+		imgConsumed = false;
 	}
 
 	private static class SingletonHolder{
@@ -22,33 +24,40 @@ public class CameraImageMonitor{
 	}
 
 	public void setImageData(byte[] image){
-		Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Copying new image.");
-		synchronized(image){
-			this.image = new byte[image.length];
-			System.arraycopy(image, 0, this.image, 0, image.length);
-			imgChanged = true;
-			image.notifyAll();
+		if(imgConsumed){
+			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Copying new image.");
+			synchronized(this.image){
+				//this.image = new byte[image.length];
+				//System.arraycopy(image, 0, this.image, 0, image.length);
+				this.image = image;
+				imgProduced = true;
+				imgConsumed = false;
+				this.image.notifyAll();
+			}
+			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Data copy finished.");
+		}else{
+			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Old image still valid, ignoring new image.");
 		}
-		Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Data copy finished.");
 	}
 
 	public byte[] getImageData(){
 		byte[] returnImg;
 		Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Entry point.");
 		synchronized(image){
-			while(!imgChanged){
-				Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Waiting for new data.");
-				try{ image.wait(); }catch(InterruptedException ie){}
+			while(!imgProduced){
+				Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Waiting for new image.");
+				try{ image.wait(); }catch(InterruptedException ie){ }
 			}
-			Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Retrieving new data.");
-			returnImg = image.clone();
-			imgChanged = false;
+			Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Retrieving new image.");
+			returnImg = image;
+			imgProduced = false;
+			imgConsumed = true;
 		}
-		Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: New data retreived.");
+		Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: New image retrieved.");
 		return returnImg;
 	}
 
 	public synchronized boolean hasChanged(){
-		return imgChanged;
+		return imgProduced;
 	}
 }
