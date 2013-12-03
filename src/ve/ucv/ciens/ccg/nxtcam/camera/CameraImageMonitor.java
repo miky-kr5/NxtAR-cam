@@ -6,13 +6,15 @@ public class CameraImageMonitor{
 	private final String TAG = "CAM_MONITOR";
 	private final String CLASS_NAME = CameraImageMonitor.class.getSimpleName();
 
+	private Object imageMonitor;
 	private byte[] image;
 	private boolean imgProduced;
 	private boolean imgConsumed;
 
 	private CameraImageMonitor(){
 		imgProduced = false;
-		imgConsumed = false;
+		imgConsumed = true;
+		imageMonitor = new Object();
 	}
 
 	private static class SingletonHolder{
@@ -26,13 +28,13 @@ public class CameraImageMonitor{
 	public void setImageData(byte[] image){
 		if(imgConsumed){
 			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Copying new image.");
-			synchronized(this.image){
+			synchronized(this.imageMonitor){
 				//this.image = new byte[image.length];
 				//System.arraycopy(image, 0, this.image, 0, image.length);
 				this.image = image;
 				imgProduced = true;
 				imgConsumed = false;
-				this.image.notifyAll();
+				this.imageMonitor.notifyAll();
 			}
 			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Data copy finished.");
 		}else{
@@ -43,10 +45,10 @@ public class CameraImageMonitor{
 	public byte[] getImageData(){
 		byte[] returnImg;
 		Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Entry point.");
-		synchronized(image){
+		synchronized(imageMonitor){
 			while(!imgProduced){
 				Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Waiting for new image.");
-				try{ image.wait(); }catch(InterruptedException ie){ }
+				try{ imageMonitor.wait(); }catch(InterruptedException ie){ }
 			}
 			Logger.log_d(TAG, CLASS_NAME + ".getImageData() :: Retrieving new image.");
 			returnImg = image;
@@ -58,6 +60,6 @@ public class CameraImageMonitor{
 	}
 
 	public synchronized boolean hasChanged(){
-		return imgProduced;
+		return imgConsumed;
 	}
 }

@@ -117,9 +117,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera){
 		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Preview received");
-		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Frame has" + (imgMonitor.hasChanged() ? "" : " not") + " changed.");
-		if(!imgMonitor.hasChanged())
-			imgMonitor.setImageData(data);
+		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Frame has" + (imgMonitor.hasChanged() ? "" : " not") + " been consumed.");
+		imgMonitor.setImageData(data);
 	}
 
 	public void removePreviewCallback(){
