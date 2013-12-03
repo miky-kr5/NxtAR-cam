@@ -13,6 +13,7 @@ import android.support.v4.app.NavUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 public class CamActivity extends Activity{
@@ -33,9 +34,7 @@ public class CamActivity extends Activity{
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-		cPreview = new CameraPreview(this, hwCamera);
-		setContentView(cPreview);
+		setContentView(R.layout.activity_cam);
 
 		Intent intent = getIntent();
 		serverIp = intent.getStringExtra("address");
@@ -82,9 +81,11 @@ public class CamActivity extends Activity{
 
 		// TODO: pause the imThread and botThread objects.
 
-		cPreview.removePreviewCallback();
-		cPreview.setCamera(null);
-		releaseCamera();
+		if(cPreview != null){
+			cPreview.removePreviewCallback();
+			cPreview.setCamera(null);
+			releaseCamera();
+		}
 	}
 	
 	@Override
@@ -99,7 +100,11 @@ public class CamActivity extends Activity{
 	 ******************/	
 	public void startCameraPreview(){
 		if(hwCamera != null){
+			Logger.log_d(TAG, CLASS_NAME + ".startCameraPreview() :: Setting camera.");
+			cPreview = new CameraPreview(this, hwCamera);
 			cPreview.setCamera(hwCamera);
+			((FrameLayout)findViewById(R.id.previewLayout)).addView(cPreview);
+			Logger.log_d(TAG, CLASS_NAME + ".startCameraPreview() :: Camera and content view set.");
 		}else{
 			Logger.log_wtf(TAG, CLASS_NAME + ".startCameraPreview() :: CAMERA IS NULL!");
 			System.exit(1);
@@ -119,6 +124,7 @@ public class CamActivity extends Activity{
 		@Override
 		protected Camera doInBackground(Void... params) {
 			Camera cam = null;
+			Logger.log_d(TAG, CLASS_NAME + ".doInBackground() :: Opening the camera.");
 			try{
 				cam = Camera.open(0);
 			}catch(Exception e){

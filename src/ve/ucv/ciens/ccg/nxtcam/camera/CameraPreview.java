@@ -13,20 +13,15 @@ import android.os.Build;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
-import android.view.ViewGroup;
 
 /** A basic Camera preview class */
 @SuppressLint("ViewConstructor")
-public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, Camera.PreviewCallback {
+public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Camera.PreviewCallback {
 	private final String TAG = "SURFVIEW";
 	private final String CLASS_NAME = CameraPreview.class.getSimpleName();
 
-	private Size previewSize;
-	private List<Size> supportedPreviewSizes;
 	private CameraImageMonitor imgMonitor;
 	private Activity parentActivity;
-	private SurfaceView surfaceView;
 	private SurfaceHolder holder;
 	private Camera camera;
 
@@ -35,8 +30,8 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 		super(context);
 		parentActivity = (Activity)context;
 
-		surfaceView = new SurfaceView(context);
-		holder = surfaceView.getHolder();
+		// surfaceView = new SurfaceView(context);
+		holder = getHolder();
 		holder.addCallback(this);
 
 		if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.HONEYCOMB)
@@ -46,19 +41,21 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 	public void setCamera(Camera camera){
 		this.camera = camera;
 		if(this.camera != null){
+			Logger.log_d(TAG, CLASS_NAME + ".setCamera() :: Setting camera.");
 			imgMonitor = CameraImageMonitor.getInstance();
-			supportedPreviewSizes = this.camera.getParameters().getSupportedPreviewSizes();
 			requestLayout();
+			Logger.log_d(TAG, CLASS_NAME + ".setCamera() :: Camera set.");
 		}
 	}
 
 	public void surfaceCreated(SurfaceHolder holder){
 		// The Surface has been created, now tell the camera where to draw the preview.
+		Logger.log_d(TAG, CLASS_NAME + ".surfaceCreated() :: Creating surface view.");
 		try {
 			if(camera != null)
 				camera.setPreviewDisplay(holder);
 		} catch (IOException e) {
-			Logger.log_e(TAG, CLASS_NAME + ".surfaceCreated() :: Error setting camera preview: " + e.getMessage());
+			Logger.log_e(TAG, CLASS_NAME + ".surfaceCreated() :: Error creating camera: " + e.getMessage());
 		}
 	}
 
@@ -84,10 +81,9 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 		requestLayout();
 
 		camParams = camera.getParameters();
-		/*Size optimal = getOptimalPreviewSize(camParams.getSupportedPreviewSizes(), w, h);
-		if(ProjectConstants.DEBUG)
-			Log.d(TAG, CLASS_NAME + ".surfaceChanged() :: Preview size set at (" + optimal.width + ", " + optimal.height + ")");*/
-		camParams.setPreviewSize(previewSize.width, previewSize.height);
+		Size optimal = getOptimalPreviewSize(camParams.getSupportedPreviewSizes(), w, h);
+		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Preview size set at (" + optimal.width + ", " + optimal.height + ")");
+		camParams.setPreviewSize(optimal.width, optimal.height);
 		camera.setParameters(camParams);
 
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
@@ -134,6 +130,8 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 	private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
 		final double ASPECT_TOLERANCE = 0.1;
 		double targetRatio = (double) w / h;
+
+		Logger.log_d(TAG, CLASS_NAME + ".getOptimalPreviewSize() :: Method started.");
 		if (sizes == null) return null;
 
 		Size optimalSize = null;
@@ -161,45 +159,9 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback, 
 				}
 			}
 		}
+		Logger.log_d(TAG, CLASS_NAME + ".getOptimalPreviewSize() :: Method ended.");
+		Logger.log_d(TAG, CLASS_NAME + ".getOptimalPreviewSize() :: Optimal size is: (" + Integer.toString(optimalSize.width) +
+				", " + Integer.toString(optimalSize.height) + ")");
 		return optimalSize;
-	}
-
-	@Override
-	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		if (changed && getChildCount() > 0) {
-			final View child = getChildAt(0);
-
-			final int width = r - l;
-			final int height = b - t;
-
-			int previewWidth = width;
-			int previewHeight = height;
-			if (previewSize != null) {
-				previewWidth = previewSize.width;
-				previewHeight = previewSize.height;
-			}
-
-			// Center the child SurfaceView within the parent.
-			if (width * previewHeight > height * previewWidth) {
-				final int scaledChildWidth = previewWidth * height / previewHeight;
-				child.layout((width - scaledChildWidth) / 2, 0,
-						(width + scaledChildWidth) / 2, height);
-			} else {
-				final int scaledChildHeight = previewHeight * width / previewWidth;
-				child.layout(0, (height - scaledChildHeight) / 2,
-						width, (height + scaledChildHeight) / 2);
-			}
-		}
-	}
-
-	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		final int width = resolveSize(getSuggestedMinimumWidth(), widthMeasureSpec);
-		final int height = resolveSize(getSuggestedMinimumHeight(), heightMeasureSpec);
-		setMeasuredDimension(width, height);
-
-		if (supportedPreviewSizes != null) {
-			previewSize = getOptimalPreviewSize(supportedPreviewSizes, width, height);
-		}
 	}
 }
