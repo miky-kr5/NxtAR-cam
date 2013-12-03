@@ -29,8 +29,6 @@ public class CameraImageMonitor{
 		if(imgConsumed){
 			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Copying new image.");
 			synchronized(this.imageMonitor){
-				//this.image = new byte[image.length];
-				//System.arraycopy(image, 0, this.image, 0, image.length);
 				this.image = image;
 				imgProduced = true;
 				imgConsumed = false;
