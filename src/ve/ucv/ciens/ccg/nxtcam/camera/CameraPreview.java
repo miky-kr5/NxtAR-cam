@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
+ * NOTE:
  * The getOptimalPreviewSize() function is copied and slightly modified from
- * the Android Open Source Project ApiDemos camera preview code which is
- * Copyright (C) 2007 The Android Open Source Project.
+ * the Android Open Source Project ApiDemos camera preview code available at
+ * the following url http://goo.gl/thP1e4 from http://android.googlesource.com .
+ * The ApiDemos code is Copyright (C) 2007 The Android Open Source Project also
+ * avilable under the Apache License Version 2.0.
  */
 package ve.ucv.ciens.ccg.nxtcam.camera;
 
