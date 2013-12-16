@@ -19,6 +19,7 @@ import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
 import ve.ucv.ciens.ccg.nxtcam.network.ImageTransferThread;
 import ve.ucv.ciens.ccg.nxtcam.network.LCPThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
+import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
 import android.content.Intent;
 import android.hardware.Camera;
@@ -109,6 +110,13 @@ public class CamActivity extends Activity{
 		// TODO: Destroy the network threads.
 		imThread = null;
 	}
+	
+	@Override
+	public void onBackPressed(){
+		Intent result = new Intent();
+		setResult(Activity.RESULT_OK, result);
+		finish();
+	}
 
 	/******************
 	 * My own methods *
@@ -122,7 +130,9 @@ public class CamActivity extends Activity{
 			Logger.log_d(TAG, CLASS_NAME + ".startCameraPreview() :: Camera and content view set.");
 		}else{
 			Logger.log_wtf(TAG, CLASS_NAME + ".startCameraPreview() :: CAMERA IS NULL!");
-			System.exit(1);
+			Intent result = new Intent();
+			setResult(ProjectConstants.RESULT_CAMERA_FAILURE, result);
+			finish();
 		}
 	}
 

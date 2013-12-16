@@ -60,6 +60,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	private final String TAG = "NXTCAM_MAIN";
 	private final String CLASS_NAME = MainActivity.class.getSimpleName();
 	private static final int REQUEST_ENABLE_BT = 1;
+	private static final int REQUEST_CAM_ACTIVITY = 2;
 
 	// Gui components
 	private Button startButton;
@@ -73,6 +74,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	// Variables.
 	private boolean wifiOnByMe;
 	private boolean btOnByMe;
+	private boolean changingActivity;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +84,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		// Set up fields.
 		wifiOnByMe = false;
 		btOnByMe = false;
+		changingActivity = false;
 
 		// Set up gui components.
 		startButton = (Button)findViewById(R.id.startButton);
@@ -115,11 +118,12 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	public void onPause(){
 		super.onPause();
 
-		if(btManager.isBTEnabled() && btOnByMe)
-			btManager.disableBT();
-
-		if(wifiManager.isWifiEnabled() && wifiOnByMe)
-			setWifi(false);
+		if(!changingActivity){
+			if(btManager.isBTEnabled() && btOnByMe)
+				btManager.disableBT();
+			if(wifiManager.isWifiEnabled() && wifiOnByMe)
+				setWifi(false);
+		}
 	}
 
 	@Override
@@ -142,11 +146,18 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	}
 
 	protected void onActivityResult(int request, int result, Intent data){
-		if(request == REQUEST_ENABLE_BT && result == RESULT_OK){
-			if(!wifiManager.isWifiEnabled())
-				enableWifi();
-		}else{
-			Toast.makeText(this, R.string.bt_on_fail, Toast.LENGTH_LONG).show();
+		if(request == REQUEST_ENABLE_BT){
+			if(result == RESULT_OK){
+				if(!wifiManager.isWifiEnabled())
+					enableWifi();
+			}else{
+				Toast.makeText(this, R.string.bt_on_fail, Toast.LENGTH_SHORT).show();
+			}
+		}else if(request == REQUEST_CAM_ACTIVITY){
+			changingActivity = false;
+			if(result == ProjectConstants.RESULT_CAMERA_FAILURE){
+				Toast.makeText(this, R.string.cam_fail, Toast.LENGTH_SHORT).show();
+			}
 		}
 	}
 
@@ -160,8 +171,9 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		if(serverFound){
 			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Launching camera activity.");
 			Intent intent = new Intent(this, CamActivity.class);
+			changingActivity = true;
 			intent.putExtra("address", ipAddress);
-			startActivity(intent);
+			startActivityForResult(intent, REQUEST_CAM_ACTIVITY);
 		}else{
 			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Cannot launch camera activity.");
 			Toast.makeText(this, R.string.badIpToast, Toast.LENGTH_SHORT).show();

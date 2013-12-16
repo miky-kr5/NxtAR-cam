@@ -45,5 +45,6 @@
     <string name="serv_wait">Por favor espere, buscando dispositivo de control</string>
     <string name="serv_connected">Conectado con el dispositivo de control</string>
     <string name="serv_fail">Falló la conexión con el dispositivo de control</string>
+    <string name="cam_fail">La cámara es null!</string>
 
 </resources>
