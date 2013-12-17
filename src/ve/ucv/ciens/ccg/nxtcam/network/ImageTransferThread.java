@@ -15,30 +15,36 @@
  */
 package ve.ucv.ciens.ccg.nxtcam.network;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraImageMonitor;
+import ve.ucv.ciens.ccg.nxtcam.network.protocols.ImageDataMessage;
+import ve.ucv.ciens.ccg.nxtcam.network.protocols.ImageTransferProtocol;
+import ve.ucv.ciens.ccg.nxtcam.network.protocols.ImageTransferProtocolMessage;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 
 public class ImageTransferThread extends Thread{
 	private final String TAG = "IM_THREAD";
 	private final String CLASS_NAME = ImageTransferThread.class.getSimpleName();
 
+	private enum thread_state_t {WAIT_FOR_ACK, WAIT_FOR_READY, CAN_SEND, END_STREAM};
+
 	private boolean pause, done;
 	private Object threadPauseMonitor;
 	private CameraImageMonitor camMonitor;
 	private Socket socket;
-	private BufferedWriter writer;
-	private BufferedReader reader;
-	private byte[] image;
-	private String serverIp;
+	private ObjectOutputStream writer;
+	private ObjectInputStream reader;	private String serverIp;
+	private thread_state_t threadState;
 
 	public ImageTransferThread(String serverIp){
 		this.serverIp = serverIp;
@@ -49,17 +55,94 @@ public class ImageTransferThread extends Thread{
 		writer = null;
 		reader = null;
 		camMonitor = CameraImageMonitor.getInstance();
+		threadState = thread_state_t.WAIT_FOR_READY;
 	}
 
 	public void run(){
+		byte[] image;
+		Object auxiliary;
+		ImageTransferProtocolMessage simpleMessage;
+		ImageDataMessage imageMessage;
+
 		connectToServer();
+
 		if(socket.isConnected()){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Not connected to a server. Finishing thread.");
 		}else{
 			while(!done){
-				checkPause();
-				image = camMonitor.getImageData();
-				// TODO: implement image transfer protocol.
+				// checkPause();
+				switch(threadState){
+				case WAIT_FOR_READY:
+					auxiliary = readMessage();
+
+					if(!validateImageTransferProtocolMessage(auxiliary)){
+						// If the message received is not valid then send an UNRECOGNIZED message to the server.
+						Logger.log_d(TAG, CLASS_NAME + ".run() :: Received an unrecognized protocol message. State WAIT_FOR_READY.");
+						Logger.log_d(TAG, CLASS_NAME + ".run() :: Sending UNRECOGNIZED message to server.");
+						sendUnrecognizedMessage();
+
+					}else{
+						// Else if the passed the validity check then proceed to the next protocol state.
+						simpleMessage = (ImageTransferProtocolMessage)auxiliary;
+						if(simpleMessage.message == ImageTransferProtocol.FLOW_CONTROL_CONTINUE)
+							threadState = thread_state_t.CAN_SEND;
+						else if(simpleMessage.message == ImageTransferProtocol.STREAM_CONTROL_END)
+							threadState = thread_state_t.END_STREAM;
+					}
+					break;
+
+				case WAIT_FOR_ACK:
+					auxiliary = readMessage();
+
+					if(!validateImageTransferProtocolMessage(auxiliary)){
+						// If the message received is not valid then send an UNRECOGNIZED message to the server.
+						Logger.log_d(TAG, CLASS_NAME + ".run() :: Received an unrecognized protocol message. State WAIT_FOR_ACK.");
+						Logger.log_d(TAG, CLASS_NAME + ".run() :: Sending UNRECOGNIZED message to server.");
+						sendUnrecognizedMessage();
+
+					}else{
+						// Else if the passed the validity check then proceed to the next protocol state.
+						simpleMessage = (ImageTransferProtocolMessage)auxiliary;
+						if(simpleMessage.message == ImageTransferProtocol.ACK_SEND_NEXT)
+							threadState = thread_state_t.CAN_SEND;
+						else if(simpleMessage.message == ImageTransferProtocol.ACK_WAIT)
+							threadState = thread_state_t.WAIT_FOR_READY;
+						else if(simpleMessage.message == ImageTransferProtocol.STREAM_CONTROL_END)
+							threadState = thread_state_t.END_STREAM;
+					}
+					break;
+
+				case CAN_SEND:
+					final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+					// Get the image and it's parameters from the monitor.
+					Rect imageSize = camMonitor.getImageParameters();
+					image = camMonitor.getImageData();
+
+					// Compress the image as Jpeg.
+					YuvImage yuvImage = new YuvImage(image, ImageFormat.NV21, imageSize.width(), imageSize.height(), null);
+					yuvImage.compressToJpeg(imageSize, 90, outputStream);
+
+					// Prepare the message for sending.
+					imageMessage = new ImageDataMessage();
+					imageMessage.imageWidth = imageSize.width();
+					imageMessage.imageHeight = imageSize.height();
+					imageMessage.data = outputStream.toByteArray();
+
+					// Send the message.
+					try{
+						writer.writeObject(imageMessage);
+					}catch(IOException io){
+						Logger.log_e(TAG, CLASS_NAME + ".run() :: Error sending image to the server: " + io.getMessage());
+					}
+					break;
+
+				case END_STREAM:
+					// Simply disconnect from the server.
+					disconnect();
+					break;
+				}
+
 			}
 		}
 	}
@@ -68,8 +151,8 @@ public class ImageTransferThread extends Thread{
 		try{
 			Logger.log_i(TAG, CLASS_NAME + ".connectToServer() :: Connecting to the server at " + serverIp);
 			socket = new Socket(InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
-			writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			writer = new ObjectOutputStream(socket.getOutputStream());
+			reader = new ObjectInputStream(socket.getInputStream());
 			Logger.log_i(TAG, CLASS_NAME + ".connectToServer() :: Connection successful.");
 		}catch(IOException io){
 			Logger.log_e(TAG, CLASS_NAME + ".connectToServer() :: Connection failed with message: " + io.getMessage());
@@ -98,6 +181,45 @@ public class ImageTransferThread extends Thread{
 				try{ threadPauseMonitor.wait(); }catch(InterruptedException ie){}
 			}
 		}
+	}
+
+	private Object readMessage(){
+		Object auxiliary;
+
+		// Read a message from the server stream.
+		try{
+			auxiliary = reader.readObject();
+
+		}catch(IOException io){
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException when reading in WAIT_FOR_READY state.");
+			auxiliary = null;
+			return null;
+		}catch(ClassNotFoundException cn){
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: ClassNotFoundException when reading in WAIT_FOR_READY state.");
+			auxiliary = null;
+			return null;
+		}
+
+		return auxiliary;
+	}
+
+	private boolean validateImageTransferProtocolMessage(Object message){
+		if(message != null && message instanceof ImageTransferProtocolMessage)
+			return true;
+		else
+			return false;
+	}
+
+	private void sendUnrecognizedMessage(){
+		ImageTransferProtocolMessage message = new ImageTransferProtocolMessage();
+		message.message = ImageTransferProtocol.UNRECOGNIZED;
+
+		try{
+			writer.writeObject(message);
+		}catch(IOException io){
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException when writing UNRECOGNIZED in WAIT_FOR_READY state.");
+		}
+		Logger.log_d(TAG, CLASS_NAME + ".run() :: UNRECOGNIZED message sent.");
 	}
 
 	public synchronized void pauseThread(){
