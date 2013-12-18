@@ -46,6 +46,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	private Activity parentActivity;
 	private SurfaceHolder holder;
 	private Camera camera;
+	private int previewWidth;
+	private int previewHeight;
 
 	@SuppressWarnings("deprecation")
 	public CameraPreview(Context context, Camera camera){
@@ -107,6 +109,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Preview size set at (" + optimal.width + ", " + optimal.height + ")");
 		camParams.setPreviewSize(optimal.width, optimal.height);
 		camera.setParameters(camParams);
+		previewWidth = optimal.width;
+		previewHeight = optimal.height;
 
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 		android.hardware.Camera.getCameraInfo(0, info);
@@ -138,9 +142,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera){
-		Size previewSize = camera.getParameters().getPreviewSize();
 		if(imgMonitor.hasChanged())
-			imgMonitor.setImageParameters(previewSize.width, previewSize.height);
+			imgMonitor.setImageParameters(previewWidth, previewHeight);
 		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Preview received");
 		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Frame has" + (imgMonitor.hasChanged() ? "" : " not") + " been consumed.");
 		imgMonitor.setImageData(data);

@@ -63,10 +63,11 @@ public class ImageTransferThread extends Thread{
 		Object auxiliary;
 		ImageTransferProtocolMessage simpleMessage;
 		ImageDataMessage imageMessage;
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
 		connectToServer();
 
-		if(socket.isConnected()){
+		if(!socket.isConnected()){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Not connected to a server. Finishing thread.");
 		}else{
 			while(!done){
@@ -101,7 +102,7 @@ public class ImageTransferThread extends Thread{
 						sendUnrecognizedMessage();
 
 					}else{
-						// Else if the passed the validity check then proceed to the next protocol state.
+						// Else if the message passed the validity check then proceed to the next protocol state.
 						simpleMessage = (ImageTransferProtocolMessage)auxiliary;
 						if(simpleMessage.message == ImageTransferProtocol.ACK_SEND_NEXT)
 							threadState = thread_state_t.CAN_SEND;
@@ -113,8 +114,6 @@ public class ImageTransferThread extends Thread{
 					break;
 
 				case CAN_SEND:
-					final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
 					// Get the image and it's parameters from the monitor.
 					Rect imageSize = camMonitor.getImageParameters();
 					image = camMonitor.getImageData();
@@ -135,11 +134,21 @@ public class ImageTransferThread extends Thread{
 					}catch(IOException io){
 						Logger.log_e(TAG, CLASS_NAME + ".run() :: Error sending image to the server: " + io.getMessage());
 					}
+
+					// Clean up stuff.
+					yuvImage = null;
+					image = null;
+					outputStream.reset();
+					imageMessage = null;
+					imageSize = null;
+
+					threadState = thread_state_t.WAIT_FOR_ACK;
 					break;
 
 				case END_STREAM:
 					// Simply disconnect from the server.
 					disconnect();
+					done = true;
 					break;
 				}
 

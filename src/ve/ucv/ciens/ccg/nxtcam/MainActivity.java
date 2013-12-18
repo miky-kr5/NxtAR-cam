@@ -342,7 +342,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		@Override
 		protected Boolean doInBackground(Void... params){
 			boolean result, done = false;
-			byte[] buffer = (new String("NxtAR server here!")).getBytes();
+			byte[] buffer = ProjectConstants.SERVICE_DISCOVERY_MESSAGE.getBytes();
 
 			// Create a buffer and tell Android we want to receive multicast datagrams.
 			packet = new DatagramPacket(buffer, buffer.length);
@@ -359,7 +359,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 					Logger.log_d(TAG, CLASS_NAME + ".run() :: Found a server at " + packet.getAddress().getHostAddress());
 					String received = new String(packet.getData());
 					Logger.log_d(TAG, CLASS_NAME + ".doInBackground() :: Packet payload is\n" + received);
-					if(received.compareTo("NxtAR server here!") == 0)
+					if(received.compareTo(ProjectConstants.SERVICE_DISCOVERY_MESSAGE) == 0)
 						done = true;
 				}
 				result = true;

@@ -55,6 +55,7 @@ public class CamActivity extends Activity{
 		Intent intent = getIntent();
 		serverIp = intent.getStringExtra("address");
 		imThread = new ImageTransferThread(serverIp);
+		imThread.start();
 	}
 
 	@Override

@@ -27,6 +27,7 @@ public abstract class ProjectConstants {
 	public static final UUID SERIAL_PORT_SERVICE_CLASS_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 	public static final String OUI_LEGO = "00:16:53";
 	public static final String MULTICAST_ADDRESS = "230.0.0.1";
+	public static final String SERVICE_DISCOVERY_MESSAGE = "NxtAR server here!";
 
 	// Activity results.
 	public static final int RESULT_CAMERA_FAILURE = Activity.RESULT_FIRST_USER + 1;
