@@ -69,11 +69,13 @@ public class ImageTransferThread extends Thread{
 
 		if(!socket.isConnected()){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Not connected to a server. Finishing thread.");
+			return;
 		}else{
 			while(!done){
 				// checkPause();
 				switch(threadState){
 				case WAIT_FOR_READY:
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Reading message from server. State is WAIT_FOR_READY.");
 					auxiliary = readMessage();
 
 					if(!validateImageTransferProtocolMessage(auxiliary)){
@@ -83,16 +85,22 @@ public class ImageTransferThread extends Thread{
 						sendUnrecognizedMessage();
 
 					}else{
-						// Else if the passed the validity check then proceed to the next protocol state.
+						// Else if the message passed the validity check then proceed to the next protocol state.
 						simpleMessage = (ImageTransferProtocolMessage)auxiliary;
-						if(simpleMessage.message == ImageTransferProtocol.FLOW_CONTROL_CONTINUE)
+						if(simpleMessage.message == ImageTransferProtocol.FLOW_CONTROL_CONTINUE){
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Received FLOW_CONTROL_CONTINUE from the server.");
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Transitioning from WAIT_FOR_READY to CAN_SEND.");
 							threadState = thread_state_t.CAN_SEND;
-						else if(simpleMessage.message == ImageTransferProtocol.STREAM_CONTROL_END)
+						}else if(simpleMessage.message == ImageTransferProtocol.STREAM_CONTROL_END){
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Received STREAM_CONTROL_END from the server.");
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Transitioning from WAIT_FOR_READY to END_STREAM.");
 							threadState = thread_state_t.END_STREAM;
+						}
 					}
 					break;
 
 				case WAIT_FOR_ACK:
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Reading message from server. State is WAIT_FOR_ACK.");
 					auxiliary = readMessage();
 
 					if(!validateImageTransferProtocolMessage(auxiliary)){
@@ -104,25 +112,33 @@ public class ImageTransferThread extends Thread{
 					}else{
 						// Else if the message passed the validity check then proceed to the next protocol state.
 						simpleMessage = (ImageTransferProtocolMessage)auxiliary;
-						if(simpleMessage.message == ImageTransferProtocol.ACK_SEND_NEXT)
+						if(simpleMessage.message == ImageTransferProtocol.ACK_SEND_NEXT){
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Received ACK_SEND_NEXT from the server.");
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Transitioning from WAIT_FOR_ACK to CAN_SEND.");
 							threadState = thread_state_t.CAN_SEND;
-						else if(simpleMessage.message == ImageTransferProtocol.ACK_WAIT)
+						}else if(simpleMessage.message == ImageTransferProtocol.ACK_WAIT){
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Received ACK_WAIT from the server.");
+							Logger.log_d(TAG, CLASS_NAME + ".run() :: Transitioning from WAIT_FOR_ACK to WAIT_FOR_READY.");
 							threadState = thread_state_t.WAIT_FOR_READY;
-						else if(simpleMessage.message == ImageTransferProtocol.STREAM_CONTROL_END)
+						}else if(simpleMessage.message == ImageTransferProtocol.STREAM_CONTROL_END){
 							threadState = thread_state_t.END_STREAM;
+						}
 					}
 					break;
 
 				case CAN_SEND:
 					// Get the image and it's parameters from the monitor.
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Getting image data.");
 					Rect imageSize = camMonitor.getImageParameters();
 					image = camMonitor.getImageData();
 
 					// Compress the image as Jpeg.
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Compressing image.");
 					YuvImage yuvImage = new YuvImage(image, ImageFormat.NV21, imageSize.width(), imageSize.height(), null);
 					yuvImage.compressToJpeg(imageSize, 90, outputStream);
 
 					// Prepare the message for sending.
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Building message.");
 					imageMessage = new ImageDataMessage();
 					imageMessage.imageWidth = imageSize.width();
 					imageMessage.imageHeight = imageSize.height();
@@ -130,30 +146,35 @@ public class ImageTransferThread extends Thread{
 
 					// Send the message.
 					try{
+						Logger.log_d(TAG, CLASS_NAME + ".run() :: Sending message.");
 						writer.writeObject(imageMessage);
 					}catch(IOException io){
 						Logger.log_e(TAG, CLASS_NAME + ".run() :: Error sending image to the server: " + io.getMessage());
 					}
 
 					// Clean up stuff.
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Cleaning.");
 					yuvImage = null;
 					image = null;
 					outputStream.reset();
 					imageMessage = null;
 					imageSize = null;
 
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Image data successfuly sent.");
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Transitioning from CAN_SEND to WAIT_FOR_ACK.");
 					threadState = thread_state_t.WAIT_FOR_ACK;
 					break;
 
 				case END_STREAM:
 					// Simply disconnect from the server.
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Ending video stream.");
 					disconnect();
 					done = true;
 					break;
 				}
-
 			}
 		}
+		Logger.log_d(TAG, CLASS_NAME + ".run() :: Thread finish reached.");
 	}
 
 	private void connectToServer(){
@@ -171,6 +192,7 @@ public class ImageTransferThread extends Thread{
 	public void disconnect(){
 		if(socket != null && socket.isConnected()){
 			try{
+				Logger.log_d(TAG, CLASS_NAME + ".disconnect() :: Closing socket.");
 				socket.close();
 			}catch (IOException io) {
 				Logger.log_e(TAG, CLASS_NAME + ".connectToServer() :: " + io.getMessage());

@@ -36,6 +36,7 @@ public final class ImageTransferProtocol{
 		case IMAGE_DATA:
 		case UNRECOGNIZED:
 			validity = true;
+			break;
 		default:
 			validity = false;
 		}
