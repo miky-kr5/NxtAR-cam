@@ -15,7 +15,7 @@
  */
 package ve.ucv.ciens.ccg.nxtcam.network.protocols;
 
-public final class ImageTransferProtocol{
+public final class VideoStreamingProtocol{
 	public static final byte STREAM_CONTROL_END = 0x10;
 	public static final byte ACK_SEND_NEXT = 0x20;
 	public static final byte ACK_WAIT = 0x30;

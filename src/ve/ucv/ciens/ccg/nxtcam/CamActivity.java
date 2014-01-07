@@ -16,7 +16,7 @@
 package ve.ucv.ciens.ccg.nxtcam;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
-import ve.ucv.ciens.ccg.nxtcam.network.ImageTransferThread;
+import ve.ucv.ciens.ccg.nxtcam.network.VideoStreamingThread;
 import ve.ucv.ciens.ccg.nxtcam.network.LCPThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
@@ -39,7 +39,7 @@ public class CamActivity extends Activity{
 	private Camera hwCamera;
 	private CameraPreview cPreview;
 	private CameraSetupTask camSetupTask;
-	private ImageTransferThread imThread;
+	private VideoStreamingThread imThread;
 	private LCPThread botThread;
 	private String serverIp;
 
@@ -54,7 +54,7 @@ public class CamActivity extends Activity{
 
 		Intent intent = getIntent();
 		serverIp = intent.getStringExtra("address");
-		imThread = new ImageTransferThread(serverIp);
+		imThread = new VideoStreamingThread(serverIp);
 		imThread.start();
 	}
 

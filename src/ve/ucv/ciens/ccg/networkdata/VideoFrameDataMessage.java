@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package ve.ucv.ciens.ccg.nxtcam.network.protocols;
+package ve.ucv.ciens.ccg.networkdata;
 
 import java.io.Serializable;
 
-public final class ImageDataMessage implements Serializable{
+public final class VideoFrameDataMessage implements Serializable{
 	private static final long serialVersionUID = 9989L;
 	public static final int magicNumber = 0x10;
 
@@ -25,7 +25,7 @@ public final class ImageDataMessage implements Serializable{
 	public int imageHeight;
 	public byte[] data;
 
-	public ImageDataMessage(){
+	public VideoFrameDataMessage(){
 		imageWidth = -1;
 		imageHeight = -1;
 		data = null;
