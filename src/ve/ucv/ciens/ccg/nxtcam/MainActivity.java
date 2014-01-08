@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2013 Miguel Angel Astor Romero
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package ve.ucv.ciens.ccg.nxtcam;
 
 import java.io.IOException;
@@ -45,6 +60,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	private final String TAG = "NXTCAM_MAIN";
 	private final String CLASS_NAME = MainActivity.class.getSimpleName();
 	private static final int REQUEST_ENABLE_BT = 1;
+	private static final int REQUEST_CAM_ACTIVITY = 2;
 
 	// Gui components
 	private Button startButton;
@@ -58,6 +74,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	// Variables.
 	private boolean wifiOnByMe;
 	private boolean btOnByMe;
+	private boolean changingActivity;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +84,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		// Set up fields.
 		wifiOnByMe = false;
 		btOnByMe = false;
+		changingActivity = false;
 
 		// Set up gui components.
 		startButton = (Button)findViewById(R.id.startButton);
@@ -100,11 +118,12 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	public void onPause(){
 		super.onPause();
 
-		if(btManager.isBTEnabled() && btOnByMe)
-			btManager.disableBT();
-
-		if(wifiManager.isWifiEnabled() && wifiOnByMe)
-			setWifi(false);
+		if(!changingActivity){
+			if(btManager.isBTEnabled() && btOnByMe)
+				btManager.disableBT();
+			if(wifiManager.isWifiEnabled() && wifiOnByMe)
+				setWifi(false);
+		}
 	}
 
 	@Override
@@ -127,11 +146,18 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 	}
 
 	protected void onActivityResult(int request, int result, Intent data){
-		if(request == REQUEST_ENABLE_BT && result == RESULT_OK){
-			if(!wifiManager.isWifiEnabled())
-				enableWifi();
-		}else{
-			Toast.makeText(this, R.string.bt_on_fail, Toast.LENGTH_LONG).show();
+		if(request == REQUEST_ENABLE_BT){
+			if(result == RESULT_OK){
+				if(!wifiManager.isWifiEnabled())
+					enableWifi();
+			}else{
+				Toast.makeText(this, R.string.bt_on_fail, Toast.LENGTH_SHORT).show();
+			}
+		}else if(request == REQUEST_CAM_ACTIVITY){
+			changingActivity = false;
+			if(result == ProjectConstants.RESULT_CAMERA_FAILURE){
+				Toast.makeText(this, R.string.cam_fail, Toast.LENGTH_SHORT).show();
+			}
 		}
 	}
 
@@ -145,8 +171,9 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		if(serverFound){
 			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Launching camera activity.");
 			Intent intent = new Intent(this, CamActivity.class);
+			changingActivity = true;
 			intent.putExtra("address", ipAddress);
-			startActivity(intent);
+			startActivityForResult(intent, REQUEST_CAM_ACTIVITY);
 		}else{
 			Logger.log_d(TAG, CLASS_NAME + ".startCamActivity() :: Cannot launch camera activity.");
 			Toast.makeText(this, R.string.badIpToast, Toast.LENGTH_SHORT).show();
@@ -315,7 +342,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		@Override
 		protected Boolean doInBackground(Void... params){
 			boolean result, done = false;
-			byte[] buffer = (new String("NxtAR server here!")).getBytes();
+			byte[] buffer = ProjectConstants.SERVICE_DISCOVERY_MESSAGE.getBytes();
 
 			// Create a buffer and tell Android we want to receive multicast datagrams.
 			packet = new DatagramPacket(buffer, buffer.length);
@@ -332,7 +359,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 					Logger.log_d(TAG, CLASS_NAME + ".run() :: Found a server at " + packet.getAddress().getHostAddress());
 					String received = new String(packet.getData());
 					Logger.log_d(TAG, CLASS_NAME + ".doInBackground() :: Packet payload is\n" + received);
-					if(received.compareTo("NxtAR server here!") == 0)
+					if(received.compareTo(ProjectConstants.SERVICE_DISCOVERY_MESSAGE) == 0)
 						done = true;
 				}
 				result = true;

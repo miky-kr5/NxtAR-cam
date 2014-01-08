@@ -1,9 +1,25 @@
+/*
+ * Copyright (C) 2013 Miguel Angel Astor Romero
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package ve.ucv.ciens.ccg.nxtcam;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
-import ve.ucv.ciens.ccg.nxtcam.network.ImageTransferThread;
+import ve.ucv.ciens.ccg.nxtcam.network.VideoStreamingThread;
 import ve.ucv.ciens.ccg.nxtcam.network.LCPThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
+import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
 import android.content.Intent;
 import android.hardware.Camera;
@@ -23,7 +39,7 @@ public class CamActivity extends Activity{
 	private Camera hwCamera;
 	private CameraPreview cPreview;
 	private CameraSetupTask camSetupTask;
-	private ImageTransferThread imThread;
+	private VideoStreamingThread imThread;
 	private LCPThread botThread;
 	private String serverIp;
 
@@ -38,7 +54,8 @@ public class CamActivity extends Activity{
 
 		Intent intent = getIntent();
 		serverIp = intent.getStringExtra("address");
-		imThread = new ImageTransferThread(serverIp);
+		imThread = new VideoStreamingThread(serverIp);
+		imThread.start();
 	}
 
 	@Override
@@ -94,6 +111,13 @@ public class CamActivity extends Activity{
 		// TODO: Destroy the network threads.
 		imThread = null;
 	}
+	
+	@Override
+	public void onBackPressed(){
+		Intent result = new Intent();
+		setResult(Activity.RESULT_OK, result);
+		finish();
+	}
 
 	/******************
 	 * My own methods *
@@ -107,7 +131,9 @@ public class CamActivity extends Activity{
 			Logger.log_d(TAG, CLASS_NAME + ".startCameraPreview() :: Camera and content view set.");
 		}else{
 			Logger.log_wtf(TAG, CLASS_NAME + ".startCameraPreview() :: CAMERA IS NULL!");
-			System.exit(1);
+			Intent result = new Intent();
+			setResult(ProjectConstants.RESULT_CAMERA_FAILURE, result);
+			finish();
 		}
 	}
 

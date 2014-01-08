@@ -1,3 +1,25 @@
+/*
+ * Copyright (C) 2013 Miguel Angel Astor Romero
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * NOTE:
+ * The getOptimalPreviewSize() function is copied and slightly modified from
+ * the Android Open Source Project ApiDemos camera preview code available at
+ * the following url http://goo.gl/thP1e4 from http://android.googlesource.com .
+ * The ApiDemos code is Copyright (C) 2007 The Android Open Source Project also
+ * avilable under the Apache License Version 2.0.
+ */
 package ve.ucv.ciens.ccg.nxtcam.camera;
 
 import java.io.IOException;
@@ -24,6 +46,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	private Activity parentActivity;
 	private SurfaceHolder holder;
 	private Camera camera;
+	private int previewWidth;
+	private int previewHeight;
 
 	@SuppressWarnings("deprecation")
 	public CameraPreview(Context context, Camera camera){
@@ -81,10 +105,22 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 		requestLayout();
 
 		camParams = camera.getParameters();
-		Size optimal = getOptimalPreviewSize(camParams.getSupportedPreviewSizes(), w, h);
+		camParams.getSupportedPreviewSizes();
+		List<Size> sizes = camParams.getSupportedPreviewSizes();
+		
+		/*for(Size size: sizes){
+			Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Supported preview size (" + size.width + ", " + size.height + ")");
+		}
+		
+		Size optimal = getOptimalPreviewSize(sizes, w, h);
 		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Preview size set at (" + optimal.width + ", " + optimal.height + ")");
-		camParams.setPreviewSize(optimal.width, optimal.height);
+		camParams.setPreviewSize(optimal.width, optimal.height);*/
+		camParams.setPreviewSize(720, 480);
 		camera.setParameters(camParams);
+		/*previewWidth = optimal.width;
+		previewHeight = optimal.height;*/
+		previewWidth = 720;
+		previewHeight = 480;
 
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 		android.hardware.Camera.getCameraInfo(0, info);
@@ -116,6 +152,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera){
+		if(imgMonitor.hasChanged())
+			imgMonitor.setImageParameters(previewWidth, previewHeight);
 		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Preview received");
 		Logger.log_d(TAG, CLASS_NAME + ".onPreviewFrame() :: Frame has" + (imgMonitor.hasChanged() ? "" : " not") + " been consumed.");
 		imgMonitor.setImageData(data);
