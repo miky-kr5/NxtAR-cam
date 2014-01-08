@@ -60,6 +60,7 @@ public class CameraImageMonitor{
 				imageConsumed = false;
 				this.imageMonitor.notifyAll();
 			}
+			System.gc();
 			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Data copy finished.");
 		}else{
 			Logger.log_d(TAG, CLASS_NAME + ".setImageData() :: Old image still valid, ignoring new image.");

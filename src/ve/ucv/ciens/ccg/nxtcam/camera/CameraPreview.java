@@ -105,12 +105,22 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 		requestLayout();
 
 		camParams = camera.getParameters();
-		Size optimal = getOptimalPreviewSize(camParams.getSupportedPreviewSizes(), w, h);
+		camParams.getSupportedPreviewSizes();
+		List<Size> sizes = camParams.getSupportedPreviewSizes();
+		
+		/*for(Size size: sizes){
+			Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Supported preview size (" + size.width + ", " + size.height + ")");
+		}
+		
+		Size optimal = getOptimalPreviewSize(sizes, w, h);
 		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Preview size set at (" + optimal.width + ", " + optimal.height + ")");
-		camParams.setPreviewSize(optimal.width, optimal.height);
+		camParams.setPreviewSize(optimal.width, optimal.height);*/
+		camParams.setPreviewSize(720, 480);
 		camera.setParameters(camParams);
-		previewWidth = optimal.width;
-		previewHeight = optimal.height;
+		/*previewWidth = optimal.width;
+		previewHeight = optimal.height;*/
+		previewWidth = 720;
+		previewHeight = 480;
 
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 		android.hardware.Camera.getCameraInfo(0, info);

@@ -49,6 +49,7 @@ public class VideoStreamingThread extends Thread{
 	private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
 	public VideoStreamingThread(String serverIp){
+		super("Video Streaming Thread");
 		this.serverIp = serverIp;
 		pause = false;
 		done = false;
@@ -189,6 +190,9 @@ public class VideoStreamingThread extends Thread{
 		}else{
 			while(!done){
 				sendImage();
+				try{
+					sleep(50L);
+				}catch(InterruptedException ie){}
 			}
 		}
 
@@ -202,6 +206,10 @@ public class VideoStreamingThread extends Thread{
 		Rect imageSize;
 
 		image = camMonitor.getImageData();
+		if(image == null){
+			Logger.log_e(TAG, CLASS_NAME + ".sendImage() :: image is null, skipping frame.");
+			return;
+		}
 		imageSize = camMonitor.getImageParameters();
 
 		// Compress the image as Jpeg.
@@ -219,7 +227,7 @@ public class VideoStreamingThread extends Thread{
 			Logger.log_d(TAG, CLASS_NAME + ".sendImage() :: Sending message.");
 			writer.writeObject(message);
 			writer.flush();
-			Logger.log_e(TAG, CLASS_NAME + ".sendImage() :: Message sent successfully: ");
+			Logger.log_d(TAG, CLASS_NAME + ".sendImage() :: Message sent successfully: ");
 
 		}catch(IOException io){
 			Logger.log_e(TAG, CLASS_NAME + ".sendImage() :: Error sending image to the server: " + io.getMessage());
@@ -227,6 +235,11 @@ public class VideoStreamingThread extends Thread{
 		}finally{
 			Logger.log_d(TAG, CLASS_NAME + ".sendImage() :: Cleaning.");
 			outputStream.reset();
+			image = null;
+			yuvImage = null;
+			message = null;
+			imageSize = null;
+			System.gc();
 		}
 	}
 
