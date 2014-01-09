@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+ * Copyright (C) 2013 Miguel Angel Astor Romero
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
 <resources>
 
     <string name="app_name">NxtCAM</string>
@@ -10,7 +26,7 @@
     <string name="start_button">Comenzar streaming de video</string>
     <string name="title_activity_cam">CamActivity</string>
     <string name="ipAddressLabel">Dirección IP de NxtAR</string>
-    <string name="badIpToast">La dirección IP no es válida</string>
+    <string name="badIpToast">No se encontró un servidor válido</string>
     <string name="emptyIpToast">Rellene el campo de dirección IP</string>
     <string name="wifi_on_title">Esta app requiere WiFi</string>
     <string name="wifi_on_msg">¿Encender el WiFi?</string>
@@ -18,7 +34,7 @@
     <string name="wifi_on_button">Encender</string>
     <string name="wifi_on_success">El radio del WiFi está encendido</string>
     <string name="wifi_on_fail">Esta app no puede funcionar sin wifi, cerrando.</string>
-    <string name= "bt_no_support">Este dispositivo no soporta Bluetooth</string>
+    <string name="bt_no_support">Este dispositivo no soporta Bluetooth</string>
     <string name="bt_on_fail">Esta app no puede funcionar sin Bluetooth, cerrando</string>
     <string name="lens_icon">Ícono de lente</string>
     <string name="robot_pair_button">Conectar con el robot</string>
@@ -29,5 +45,6 @@
     <string name="serv_wait">Por favor espere, buscando dispositivo de control</string>
     <string name="serv_connected">Conectado con el dispositivo de control</string>
     <string name="serv_fail">Falló la conexión con el dispositivo de control</string>
+    <string name="cam_fail">La cámara es null!</string>
 
 </resources>

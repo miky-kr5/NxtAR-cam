@@ -1,4 +1,4 @@
-<!--
+/*
  * Copyright (C) 2013 Miguel Angel Astor Romero
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +12,22 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
--->
+ */
+package ve.ucv.ciens.ccg.networkdata;
 
-<resources>
+import java.io.Serializable;
 
-    <!-- Default screen margins, per the Android Design guidelines. -->
-    <dimen name="activity_horizontal_margin">16dp</dimen>
-    <dimen name="activity_vertical_margin">16dp</dimen>
+public final class VideoFrameDataMessage implements Serializable{
+	private static final long serialVersionUID = 9989L;
+	public static final int magicNumber = 0x10;
 
-</resources>
+	public int imageWidth;
+	public int imageHeight;
+	public byte[] data;
+
+	public VideoFrameDataMessage(){
+		imageWidth = -1;
+		imageHeight = -1;
+		data = null;
+	}
+}

@@ -1,8 +1,25 @@
+/*
+ * Copyright (C) 2013 Miguel Angel Astor Romero
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package ve.ucv.ciens.ccg.nxtcam;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
-import ve.ucv.ciens.ccg.nxtcam.network.ImageTransferThread;
+import ve.ucv.ciens.ccg.nxtcam.network.VideoStreamingThread;
+import ve.ucv.ciens.ccg.nxtcam.network.LCPThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
+import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
 import android.content.Intent;
 import android.hardware.Camera;
@@ -12,16 +29,18 @@ import android.support.v4.app.NavUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 public class CamActivity extends Activity{
 	private final String TAG = "NXTCAM_CAM";
-	private final String CLASS_NAME = MainActivity.class.getSimpleName();
-	
+	private final String CLASS_NAME = CamActivity.class.getSimpleName();
+
 	private Camera hwCamera;
 	private CameraPreview cPreview;
 	private CameraSetupTask camSetupTask;
-	private ImageTransferThread imThread;
+	private VideoStreamingThread imThread;
+	private LCPThread botThread;
 	private String serverIp;
 
 	/*******************
@@ -31,12 +50,12 @@ public class CamActivity extends Activity{
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-		
-		cPreview = new CameraPreview(this, hwCamera);
-		setContentView(cPreview);
-		
+		setContentView(R.layout.activity_cam);
+
 		Intent intent = getIntent();
 		serverIp = intent.getStringExtra("address");
+		imThread = new VideoStreamingThread(serverIp);
+		imThread.start();
 	}
 
 	@Override
@@ -69,20 +88,35 @@ public class CamActivity extends Activity{
 
 		camSetupTask = new CameraSetupTask();
 		camSetupTask.execute();
-		
-		imThread = new ImageTransferThread(serverIp);
-		imThread.start();
+
+		// imThread.start();
 	}
 
 	@Override
 	public void onPause(){
 		super.onPause();
 
-		// TODO: Disconnect and destroy the imThread object.
-		
-		cPreview.removePreviewCallback();
-		cPreview.setCamera(null);
-		releaseCamera();
+		// TODO: pause the imThread and botThread objects.
+
+		if(cPreview != null){
+			cPreview.removePreviewCallback();
+			cPreview.setCamera(null);
+			releaseCamera();
+		}
+	}
+	
+	@Override
+	public void onDestroy(){
+		super.onDestroy();
+		// TODO: Destroy the network threads.
+		imThread = null;
+	}
+	
+	@Override
+	public void onBackPressed(){
+		Intent result = new Intent();
+		setResult(Activity.RESULT_OK, result);
+		finish();
 	}
 
 	/******************
@@ -90,10 +124,16 @@ public class CamActivity extends Activity{
 	 ******************/	
 	public void startCameraPreview(){
 		if(hwCamera != null){
+			Logger.log_d(TAG, CLASS_NAME + ".startCameraPreview() :: Setting camera.");
+			cPreview = new CameraPreview(this, hwCamera);
 			cPreview.setCamera(hwCamera);
+			((FrameLayout)findViewById(R.id.previewLayout)).addView(cPreview);
+			Logger.log_d(TAG, CLASS_NAME + ".startCameraPreview() :: Camera and content view set.");
 		}else{
 			Logger.log_wtf(TAG, CLASS_NAME + ".startCameraPreview() :: CAMERA IS NULL!");
-			System.exit(1);
+			Intent result = new Intent();
+			setResult(ProjectConstants.RESULT_CAMERA_FAILURE, result);
+			finish();
 		}
 	}
 
@@ -110,6 +150,7 @@ public class CamActivity extends Activity{
 		@Override
 		protected Camera doInBackground(Void... params) {
 			Camera cam = null;
+			Logger.log_d(TAG, CLASS_NAME + ".doInBackground() :: Opening the camera.");
 			try{
 				cam = Camera.open(0);
 			}catch(Exception e){
@@ -121,7 +162,7 @@ public class CamActivity extends Activity{
 		@Override
 		protected void onPostExecute(Camera result) {
 			super.onPostExecute(result);
-			
+
 			hwCamera = result;
 			if(result != null){
 				Logger.log_d(TAG, CLASS_NAME + ".onPostExecute() :: Camera successfully opened");
