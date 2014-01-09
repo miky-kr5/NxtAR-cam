@@ -227,8 +227,8 @@ public class VideoStreamingThread extends Thread{
 			Logger.log_d(TAG, CLASS_NAME + ".sendImage() :: Sending message.");
 			writer.writeObject(message);
 			writer.flush();
+			writer.reset();
 			Logger.log_d(TAG, CLASS_NAME + ".sendImage() :: Message sent successfully: ");
-
 		}catch(IOException io){
 			Logger.log_e(TAG, CLASS_NAME + ".sendImage() :: Error sending image to the server: " + io.getMessage());
 
