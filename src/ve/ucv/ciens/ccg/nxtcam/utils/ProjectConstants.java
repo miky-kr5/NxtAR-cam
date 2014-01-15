@@ -32,5 +32,5 @@ public abstract class ProjectConstants {
 	// Activity results.
 	public static final int RESULT_CAMERA_FAILURE = Activity.RESULT_FIRST_USER + 1;
 
-	public static final boolean DEBUG = false;
+	public static final boolean DEBUG = true;
 }

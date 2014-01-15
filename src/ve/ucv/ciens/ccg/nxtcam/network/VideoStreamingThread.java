@@ -19,8 +19,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 import ve.ucv.ciens.ccg.networkdata.VideoFrameDataMessage;
 import ve.ucv.ciens.ccg.networkdata.VideoStreamingControlMessage;
@@ -42,6 +45,7 @@ public class VideoStreamingThread extends Thread{
 	private Object threadPauseMonitor;
 	private CameraImageMonitor camMonitor;
 	private Socket socket;
+	DatagramSocket udpSocket;
 	private ObjectOutputStream writer;
 	private ObjectInputStream reader;
 	private String serverIp;
@@ -182,6 +186,14 @@ public class VideoStreamingThread extends Thread{
 
 	public void run(){
 		connectToServer();
+		
+		try{
+			udpSocket = new DatagramSocket();
+			udpSocket.setSendBufferSize(Integer.MAX_VALUE);
+		}catch(IOException io){
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException received creating socket " + io.getMessage());
+			System.exit(1);
+		}
 
 		if(!socket.isConnected()){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Not connected to a server. Finishing thread.");
@@ -189,7 +201,8 @@ public class VideoStreamingThread extends Thread{
 
 		}else{
 			while(!done){
-				sendImage();
+				//sendImage();
+				sendUdp();
 				try{
 					sleep(50L);
 				}catch(InterruptedException ie){}
@@ -199,6 +212,73 @@ public class VideoStreamingThread extends Thread{
 		Logger.log_d(TAG, CLASS_NAME + ".run() :: Thread finish reached.");
 	}
 
+	private byte[] int2ByteArray(int integer){
+		int shift;
+		byte[] array = new byte[4];
+		for(int i = 0; i < 4; i++){
+			shift = i << 3;
+			array[3 - i] = (byte)((integer & (0xff << shift)) >>> shift);
+		}
+		return array;
+	}
+	
+	private void sendUdp(){
+		int bufferSize;
+		byte[] image;
+		byte[] buffer;
+		byte[] size;
+		DatagramPacket packet;
+		VideoFrameDataMessage message;
+		Rect imageSize;
+		YuvImage yuvImage;
+		
+		image = camMonitor.getImageData();
+		imageSize = camMonitor.getImageParameters();
+
+		yuvImage = new YuvImage(image, ImageFormat.NV21, imageSize.width(), imageSize.height(), null);
+		yuvImage.compressToJpeg(imageSize, 90, outputStream);
+		
+		message = new VideoFrameDataMessage();
+		message.data = outputStream.toByteArray();
+		message.imageWidth = imageSize.width();
+		message.imageHeight = imageSize.height();
+		
+		outputStream.reset();
+		
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+		try{
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(message);
+			oos.flush();
+			oos.reset();
+		}catch(IOException io){
+			Logger.log_e(TAG, CLASS_NAME + ".sendUdp() :: IOException received while serializing." + io.getMessage());
+			return;
+		}
+
+		buffer = baos.toByteArray();
+		baos.reset();
+		bufferSize = buffer.length;
+		size = int2ByteArray(bufferSize);
+
+		try{
+			packet = new DatagramPacket(size, 4, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_2);
+			udpSocket.send(packet);
+
+			packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_2);
+			udpSocket.send(packet);
+
+		}catch(UnknownHostException uo){
+			Logger.log_e(TAG, CLASS_NAME + ".sendUdp() :: UnknownHostException received " + uo.getMessage());
+			return;
+		}catch(IOException io){
+			Logger.log_e(TAG, CLASS_NAME + ".sendUdp() :: IOException buffer size is " + Integer.toString(buffer.length));
+			Logger.log_e(TAG, CLASS_NAME + ".sendUdp() :: IOException received while sending " + io.getMessage());
+			return;
+		}
+	}
+	
 	private void sendImage(){
 		byte[] image;
 		YuvImage yuvImage;
