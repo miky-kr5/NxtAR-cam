@@ -15,13 +15,46 @@
  */
 package ve.ucv.ciens.ccg.nxtcam.network;
 
-public class LCPThread extends Thread{
+import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 
-	public LCPThread(){
-		
+public class LCPThread extends Thread{
+	private static final String TAG = "LCP_THREAD";
+	private static final String CLASS_NAME = LCPThread.class.getSimpleName();
+
+	private boolean done;
+	private boolean reportSensors;
+	private BTCommunicator btComm;
+	private MotorControlThread motorControl;
+	private SensorReportThread sensorReport;
+	
+	public LCPThread(String serverIp){
+		super("Robot Control Main Thread");
+		btComm = BTCommunicator.getInstance();
+		done = false;
+		motorControl = new MotorControlThread(serverIp);
+		sensorReport = new SensorReportThread(serverIp);
 	}
 	
 	public void run(){
+		if(!motorControl.connectToServer()){
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread motorControl could not connect to the server.");
+			return;
+		}
+		if(!(reportSensors = sensorReport.connectToServer())){
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread sensorReport could not connect to the server.");
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: Sensor data will not be reported to server app.");
+		}
 		
+		while(!done){
+			if(btComm.isBTEnabled() && btComm.isConnected()){
+				Logger.log_d(TAG, CLASS_NAME + ".run() :: Connected.");
+				if(reportSensors)
+					Logger.log_d(TAG, CLASS_NAME + ".run() :: Sensor data can be reported.");
+			}
+		}
+	}
+	
+	public void finish(){
+		done = true;
 	}
 }

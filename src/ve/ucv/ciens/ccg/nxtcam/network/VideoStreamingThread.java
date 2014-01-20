@@ -17,7 +17,6 @@ package ve.ucv.ciens.ccg.nxtcam.network;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -26,9 +25,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import ve.ucv.ciens.ccg.networkdata.VideoFrameDataMessage;
-import ve.ucv.ciens.ccg.networkdata.VideoStreamingControlMessage;
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraImageMonitor;
-import ve.ucv.ciens.ccg.nxtcam.network.protocols.VideoStreamingProtocol;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.graphics.ImageFormat;
@@ -39,30 +36,30 @@ public class VideoStreamingThread extends Thread{
 	private final String TAG = "IM_THREAD";
 	private final String CLASS_NAME = VideoStreamingThread.class.getSimpleName();
 
-	private enum ProtocolState_t {WAIT_FOR_ACK, WAIT_FOR_READY, CAN_SEND, END_STREAM};
+	//private enum ProtocolState_t {WAIT_FOR_ACK, WAIT_FOR_READY, CAN_SEND, END_STREAM};
 
-	private boolean pause, done;
+	private boolean /*pause,*/ done;
 	private Object threadPauseMonitor;
 	private CameraImageMonitor camMonitor;
 	private Socket socket;
 	DatagramSocket udpSocket;
-	private ObjectOutputStream writer;
-	private ObjectInputStream reader;
+	/*private ObjectOutputStream writer;
+	private ObjectInputStream reader;*/
 	private String serverIp;
-	private ProtocolState_t protocolState;
+	//private ProtocolState_t protocolState;
 	private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
 	public VideoStreamingThread(String serverIp){
 		super("Video Streaming Thread");
 		this.serverIp = serverIp;
-		pause = false;
+		//pause = false;
 		done = false;
 		threadPauseMonitor = new Object();
 		socket = null;
-		writer = null;
-		reader = null;
+		//writer = null;
+		//reader = null;
 		camMonitor = CameraImageMonitor.getInstance();
-		protocolState = ProtocolState_t.WAIT_FOR_READY;
+		//protocolState = ProtocolState_t.WAIT_FOR_READY;
 	}
 
 	/*public void run(){
@@ -186,7 +183,7 @@ public class VideoStreamingThread extends Thread{
 
 	public void run(){
 		connectToServer();
-		
+
 		try{
 			udpSocket = new DatagramSocket();
 			udpSocket.setSendBufferSize(Integer.MAX_VALUE);
@@ -221,7 +218,7 @@ public class VideoStreamingThread extends Thread{
 		}
 		return array;
 	}
-	
+
 	private void sendUdp(){
 		int bufferSize;
 		byte[] image;
@@ -231,20 +228,20 @@ public class VideoStreamingThread extends Thread{
 		VideoFrameDataMessage message;
 		Rect imageSize;
 		YuvImage yuvImage;
-		
+
 		image = camMonitor.getImageData();
 		imageSize = camMonitor.getImageParameters();
 
 		yuvImage = new YuvImage(image, ImageFormat.NV21, imageSize.width(), imageSize.height(), null);
 		yuvImage.compressToJpeg(imageSize, 90, outputStream);
-		
+
 		message = new VideoFrameDataMessage();
 		message.data = outputStream.toByteArray();
 		message.imageWidth = imageSize.width();
 		message.imageHeight = imageSize.height();
-		
+
 		outputStream.reset();
-		
+
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 		try{
@@ -278,8 +275,8 @@ public class VideoStreamingThread extends Thread{
 			return;
 		}
 	}
-	
-	private void sendImage(){
+
+	/*private void sendImage(){
 		byte[] image;
 		YuvImage yuvImage;
 		VideoFrameDataMessage message;
@@ -321,14 +318,14 @@ public class VideoStreamingThread extends Thread{
 			imageSize = null;
 			System.gc();
 		}
-	}
+	}*/
 
 	private void connectToServer(){
 		try{
 			Logger.log_i(TAG, CLASS_NAME + ".connectToServer() :: Connecting to the server at " + serverIp);
 			socket = new Socket(InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
-			writer = new ObjectOutputStream(socket.getOutputStream());
-			reader = new ObjectInputStream(socket.getInputStream());
+			/*writer = new ObjectOutputStream(socket.getOutputStream());
+			reader = new ObjectInputStream(socket.getInputStream());*/
 			Logger.log_i(TAG, CLASS_NAME + ".connectToServer() :: Connection successful.");
 		}catch(IOException io){
 			Logger.log_e(TAG, CLASS_NAME + ".connectToServer() :: Connection failed with message: " + io.getMessage());
@@ -351,7 +348,7 @@ public class VideoStreamingThread extends Thread{
 		Logger.log_i(TAG, CLASS_NAME + ".finish() :: Finishing thread.");
 	}
 
-	private void checkPause(){
+	/*private void checkPause(){
 		synchronized (threadPauseMonitor){
 			while(pause){
 				Logger.log_d(TAG, CLASS_NAME + ".checkPause() :: Pause requested.");
@@ -397,17 +394,17 @@ public class VideoStreamingThread extends Thread{
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException when writing UNRECOGNIZED in WAIT_FOR_READY state.");
 		}
 		Logger.log_d(TAG, CLASS_NAME + ".run() :: UNRECOGNIZED message sent.");
-	}
+	}*/
 
 	public synchronized void pauseThread(){
-		pause = true;
+		//pause = true;
 		Logger.log_d(TAG, CLASS_NAME + ".pauseThread() :: Pausing thread.");
 	}
 
 	public synchronized void resumeThread(){
 		Logger.log_d(TAG, CLASS_NAME + ".resumeThread() :: Resuming thread.");
 		synchronized (threadPauseMonitor) {
-			pause = false;
+			//pause = false;
 			threadPauseMonitor.notifyAll();
 		}
 	}
