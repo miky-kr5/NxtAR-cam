@@ -182,21 +182,21 @@ public class VideoStreamingThread extends Thread{
 	}*/
 
 	public void run(){
-		connectToServer();
+		//connectToServer();
 
 		try{
 			udpSocket = new DatagramSocket();
-			udpSocket.setSendBufferSize(Integer.MAX_VALUE);
+			//udpSocket.setSendBufferSize(Integer.MAX_VALUE);
 		}catch(IOException io){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException received creating socket " + io.getMessage());
 			System.exit(1);
 		}
 
-		if(!socket.isConnected()){
+		/*if(!socket.isConnected()){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Not connected to a server. Finishing thread.");
 			return;
 
-		}else{
+		}else{*/
 			while(!done){
 				//sendImage();
 				sendUdp();
@@ -204,7 +204,7 @@ public class VideoStreamingThread extends Thread{
 					sleep(50L);
 				}catch(InterruptedException ie){}
 			}
-		}
+		//}
 
 		Logger.log_d(TAG, CLASS_NAME + ".run() :: Thread finish reached.");
 	}
@@ -260,10 +260,10 @@ public class VideoStreamingThread extends Thread{
 		size = int2ByteArray(bufferSize);
 
 		try{
-			packet = new DatagramPacket(size, 4, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_2);
+			packet = new DatagramPacket(size, 4, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
 			udpSocket.send(packet);
 
-			packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_2);
+			packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
 			udpSocket.send(packet);
 
 		}catch(UnknownHostException uo){

@@ -26,7 +26,7 @@ public class LCPThread extends Thread{
 	private BTCommunicator btComm;
 	private MotorControlThread motorControl;
 	private SensorReportThread sensorReport;
-	
+
 	public LCPThread(String serverIp){
 		super("Robot Control Main Thread");
 		btComm = BTCommunicator.getInstance();
@@ -34,7 +34,7 @@ public class LCPThread extends Thread{
 		motorControl = new MotorControlThread(serverIp);
 		sensorReport = new SensorReportThread(serverIp);
 	}
-	
+
 	public void run(){
 		if(!motorControl.connectToServer()){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread motorControl could not connect to the server.");
@@ -44,7 +44,7 @@ public class LCPThread extends Thread{
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread sensorReport could not connect to the server.");
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Sensor data will not be reported to server app.");
 		}
-		
+
 		while(!done){
 			if(btComm.isBTEnabled() && btComm.isConnected()){
 				Logger.log_d(TAG, CLASS_NAME + ".run() :: Connected.");
@@ -53,7 +53,7 @@ public class LCPThread extends Thread{
 			}
 		}
 	}
-	
+
 	public void finish(){
 		done = true;
 	}

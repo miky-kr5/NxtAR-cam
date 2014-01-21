@@ -35,7 +35,10 @@ public class MotorControlThread extends Thread {
 			return;
 		}else{
 			while(!done){
-
+				Object msg = readMessage();
+				MotorEvent event = verifyMessage(msg);
+				if(event != null)
+					queue.addEvent(event);
 			}
 		}
 	}
