@@ -36,7 +36,7 @@ public class SensorReportThread extends Thread{
 	public boolean connectToServer(){
 		boolean connected;
 		try{
-			socket = new Socket(serverIp, ProjectConstants.SERVER_TCP_PORT_3);
+			socket = new Socket(serverIp, ProjectConstants.SENSOR_REPORT_PORT);
 			writer = new ObjectOutputStream(socket.getOutputStream());
 			connected = true;
 		}catch(IOException io){

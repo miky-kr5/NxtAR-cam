@@ -260,10 +260,10 @@ public class VideoStreamingThread extends Thread{
 		size = int2ByteArray(bufferSize);
 
 		try{
-			packet = new DatagramPacket(size, 4, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
+			packet = new DatagramPacket(size, 4, InetAddress.getByName(serverIp), ProjectConstants.VIDEO_STREAMING_PORT);
 			udpSocket.send(packet);
 
-			packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
+			packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(serverIp), ProjectConstants.VIDEO_STREAMING_PORT);
 			udpSocket.send(packet);
 
 		}catch(UnknownHostException uo){
@@ -323,7 +323,7 @@ public class VideoStreamingThread extends Thread{
 	private void connectToServer(){
 		try{
 			Logger.log_i(TAG, CLASS_NAME + ".connectToServer() :: Connecting to the server at " + serverIp);
-			socket = new Socket(InetAddress.getByName(serverIp), ProjectConstants.SERVER_TCP_PORT_1);
+			socket = new Socket(InetAddress.getByName(serverIp), ProjectConstants.VIDEO_STREAMING_PORT);
 			/*writer = new ObjectOutputStream(socket.getOutputStream());
 			reader = new ObjectInputStream(socket.getInputStream());*/
 			Logger.log_i(TAG, CLASS_NAME + ".connectToServer() :: Connection successful.");
