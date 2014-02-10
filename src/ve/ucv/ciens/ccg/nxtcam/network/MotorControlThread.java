@@ -131,4 +131,8 @@ public class MotorControlThread extends Thread {
 			return null;
 		}
 	}
+	
+	public boolean isConnected(){
+		return connected;
+	}
 }

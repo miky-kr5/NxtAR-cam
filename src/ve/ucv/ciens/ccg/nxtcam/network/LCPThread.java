@@ -15,6 +15,12 @@
  */
 package ve.ucv.ciens.ccg.nxtcam.network;
 
+import java.io.IOException;
+
+import ve.ucv.ciens.ccg.networkdata.MotorEvent;
+import ve.ucv.ciens.ccg.networkdata.MotorEvent.motor_t;
+import ve.ucv.ciens.ccg.nxtcam.network.protocols.LegoCommunicationProtocol;
+import ve.ucv.ciens.ccg.nxtcam.robotcontrol.MotorEventQueue;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 
 public class LCPThread extends Thread{
@@ -27,29 +33,63 @@ public class LCPThread extends Thread{
 	private MotorControlThread motorControl;
 	private SensorReportThread sensorReport;
 
+	private MotorEventQueue queue;
+
 	public LCPThread(String serverIp){
 		super("Robot Control Main Thread");
 		btComm = BTCommunicator.getInstance();
 		done = false;
 		motorControl = new MotorControlThread(serverIp);
 		sensorReport = new SensorReportThread(serverIp);
+		queue = MotorEventQueue.getInstance();
 	}
 
 	public void run(){
-		if(!motorControl.connectToServer()){
-			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread motorControl could not connect to the server.");
-			return;
+		long then, now, delta;
+		MotorEvent event;
+
+		//sensorReport.start();
+		motorControl.start();
+
+		then = System.currentTimeMillis();
+
+		while(!motorControl.isConnected()){
+			now = System.currentTimeMillis();
+			delta = now - then;
+			if(delta > 5000L){
+				Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread motorControl could not connect to the server.");
+				return;
+			}
 		}
-		if(!(reportSensors = sensorReport.connectToServer())){
+		/*if(!(reportSensors = sensorReport.connectToServer())){
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread sensorReport could not connect to the server.");
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Sensor data will not be reported to server app.");
-		}
+		}*/
 
 		while(!done){
 			if(btComm.isBTEnabled() && btComm.isConnected()){
-				Logger.log_d(TAG, CLASS_NAME + ".run() :: Connected.");
-				if(reportSensors)
-					Logger.log_d(TAG, CLASS_NAME + ".run() :: Sensor data can be reported.");
+				//Logger.log_d(TAG, CLASS_NAME + ".run() :: Connected.");
+
+				event = queue.getNextEvent();
+
+				try{
+					btComm.writeMessage(
+							LegoCommunicationProtocol.setOutputState(
+									event.getMotor() == motor_t.MOTOR_A ? LegoCommunicationProtocol.PORT_0 : LegoCommunicationProtocol.PORT_2,
+											event.getPower())
+							);
+					Logger.log_i(TAG, CLASS_NAME + ".run() :: Message sent to the robot.");
+
+				}catch(IOException io){
+					Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException sending message to the robot.");
+				}
+
+				/*if(reportSensors){
+					//Logger.log_d(TAG, CLASS_NAME + ".run() :: Sensor data can be reported.");
+				}*/
+			}else{
+				Logger.log_e(TAG, CLASS_NAME +  ".run() :: The robot disconnected or was never available.");
+				break;
 			}
 		}
 	}

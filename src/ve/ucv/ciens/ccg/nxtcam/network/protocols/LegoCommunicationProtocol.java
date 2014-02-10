@@ -16,6 +16,9 @@
 package ve.ucv.ciens.ccg.nxtcam.network.protocols;
 
 import java.security.InvalidParameterException;
+import java.util.Arrays;
+
+import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 
 public abstract class LegoCommunicationProtocol{
 	/**
@@ -148,9 +151,9 @@ public abstract class LegoCommunicationProtocol{
 		if(turn_ratio < -100 || turn_ratio > 100){
 			throw new InvalidParameterException("Turn ratio out of range.");
 		}
-		if(mode_byte != MOTORON && mode_byte != BRAKE && mode_byte != REGULATED){
+		/*if(mode_byte != MOTORON && mode_byte != BRAKE && mode_byte != REGULATED){
 			throw new InvalidParameterException("Invalid mode byte.");
-		}
+		}*/
 		if(regulation_mode != REGULATION_MODE_IDLE && regulation_mode != REGULATION_MODE_MOTOR_SPEED && regulation_mode != REGULATION_MODE_MOTOR_SYNC){
 			throw new InvalidParameterException("Invalid regulation mode.");
 		}
@@ -170,7 +173,17 @@ public abstract class LegoCommunicationProtocol{
 		message[9] = run_state;
 		message[10] = message[11] = message[12] = message[13] = message[14] = 0x00; 
 
+		Logger.log_d("LCP", LegoCommunicationProtocol.class.getSimpleName() + "setOutputState(...) :: " + Arrays.toString(message));
+
 		return message;
+	}
+
+	public static byte[] setOutputState(byte output_port, byte power){
+		if(power == (byte)0){
+			return setOutputState(output_port, power, (byte)0x00, REGULATION_MODE_IDLE, (byte)0x00, MOTOR_RUN_STATE_IDLE);
+		}else{
+			return setOutputState(output_port, power, (byte)(MOTORON + BRAKE), REGULATION_MODE_MOTOR_SPEED, (byte)0x00, MOTOR_RUN_STATE_RUNNING);
+		}
 	}
 
 	/**
