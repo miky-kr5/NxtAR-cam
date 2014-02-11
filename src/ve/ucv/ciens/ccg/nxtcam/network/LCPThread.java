@@ -48,7 +48,7 @@ public class LCPThread extends Thread{
 		long then, now, delta;
 		MotorEvent event;
 
-		//sensorReport.start();
+		sensorReport.start();
 		motorControl.start();
 
 		then = System.currentTimeMillis();
@@ -56,37 +56,41 @@ public class LCPThread extends Thread{
 		while(!motorControl.isConnected()){
 			now = System.currentTimeMillis();
 			delta = now - then;
-			if(delta > 5000L){
+			if(delta > 9000L){
 				Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread motorControl could not connect to the server.");
 				return;
 			}
 		}
-		/*if(!(reportSensors = sensorReport.connectToServer())){
+
+		if((reportSensors = sensorReport.isConnected())){
+			Logger.log_d(TAG, CLASS_NAME + ".run() :: Sensor data can be reported.");
+		}else{
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread sensorReport could not connect to the server.");
 			Logger.log_e(TAG, CLASS_NAME + ".run() :: Sensor data will not be reported to server app.");
-		}*/
+		}
 
 		while(!done){
 			if(btComm.isBTEnabled() && btComm.isConnected()){
-				//Logger.log_d(TAG, CLASS_NAME + ".run() :: Connected.");
 
 				event = queue.getNextEvent();
 
 				try{
 					btComm.writeMessage(
 							LegoCommunicationProtocol.setOutputState(
-									event.getMotor() == motor_t.MOTOR_A ? LegoCommunicationProtocol.PORT_0 : LegoCommunicationProtocol.PORT_2,
+									event.getMotor() == motor_t.MOTOR_A ? LegoCommunicationProtocol.PORT_0 : (event.getMotor() == motor_t.MOTOR_B ? LegoCommunicationProtocol.PORT_1 : LegoCommunicationProtocol.PORT_2),
 											event.getPower())
 							);
 					Logger.log_i(TAG, CLASS_NAME + ".run() :: Message sent to the robot.");
 
+					try{ sleep(40); }catch(InterruptedException ie){ }
+
 				}catch(IOException io){
-					Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException sending message to the robot.");
+					Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException sending message to the robot: " + io.getMessage());
 				}
 
-				/*if(reportSensors){
-					//Logger.log_d(TAG, CLASS_NAME + ".run() :: Sensor data can be reported.");
-				}*/
+				if(reportSensors){
+					
+				}
 			}else{
 				Logger.log_e(TAG, CLASS_NAME +  ".run() :: The robot disconnected or was never available.");
 				break;

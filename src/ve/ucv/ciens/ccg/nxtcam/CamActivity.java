@@ -41,7 +41,6 @@ public class CamActivity extends Activity{
 	private CameraSetupTask camSetupTask;
 	private VideoStreamingThread imThread;
 	private LCPThread botThread;
-	//private MotorControlThread motorThread;
 	private String serverIp;
 
 	/*******************
@@ -60,9 +59,6 @@ public class CamActivity extends Activity{
 
 		botThread = new LCPThread(serverIp);
 		botThread.start();
-		
-		/*motorThread = new MotorControlThread(serverIp);
-		motorThread.start();*/
 	}
 
 	@Override

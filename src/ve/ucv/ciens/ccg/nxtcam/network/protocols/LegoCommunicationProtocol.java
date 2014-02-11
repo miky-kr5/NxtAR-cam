@@ -20,6 +20,9 @@ import java.util.Arrays;
 
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 
+/**
+ * <p>Utility class that provides methods to get Lego Communication Protocol PDUs as byte arrays.</p> 
+ **/
 public abstract class LegoCommunicationProtocol{
 	/**
 	 * Command types. Byte 0;
@@ -71,33 +74,33 @@ public abstract class LegoCommunicationProtocol{
 	/**
 	 * Sensor types for setInputMode().
 	 */
-	public static final byte NO_SENSOR = 0x00;
-	public static final byte SWITCH = 0x01;
-	public static final byte TEMPERATURE = 0x02;
-	public static final byte REFLECTION = 0x03;
-	public static final byte ANGLE = 0x04;
-	public static final byte LIGHT_ACTIVE = 0x05;
-	public static final byte LIGHT_INACTIVE = 0x06;
-	public static final byte SOUND_DB = 0x07;
-	public static final byte SOUND_DBA = 0x08;
-	public static final byte CUSTOM = 0x09;
-	public static final byte LOWSPEED = 0x0A;
-	public static final byte LOWSPEED_9V = 0x0B;
+	public static final byte NO_SENSOR          = 0x00;
+	public static final byte SWITCH             = 0x01;
+	public static final byte TEMPERATURE        = 0x02;
+	public static final byte REFLECTION         = 0x03;
+	public static final byte ANGLE              = 0x04;
+	public static final byte LIGHT_ACTIVE       = 0x05;
+	public static final byte LIGHT_INACTIVE     = 0x06;
+	public static final byte SOUND_DB           = 0x07;
+	public static final byte SOUND_DBA          = 0x08;
+	public static final byte CUSTOM             = 0x09;
+	public static final byte LOWSPEED           = 0x0A;
+	public static final byte LOWSPEED_9V        = 0x0B;
 	public static final byte NO_OF_SENSOR_TYPES = 0x0C;
 
 	/**
 	 * Sensor modes for setInputMode().
 	 */
-	public static final byte RAWMODE = 0x00;
-	public static final byte BOOLEANMODE = 0x20;
-	public static final byte TRANSITIONCNTMODE = 0x40;
-	public static final byte PERIODCOUNTERMODE = 0x60;
-	public static final byte PCTFULLSCALEMODE = (byte)0x80;
-	public static final byte CELSIUSMODE = (byte)0xA0;
-	public static final byte FARENHEITMODE = (byte)0xC0;
-	public static final byte ANGLESTEPMODE = (byte)0xE0;
-	public static final byte SLOPEMASK = (byte)0x1F;
-	public static final byte MODEMASK = (byte)0xE0;
+	public static final byte RAWMODE           =       0x00;
+	public static final byte BOOLEANMODE       =       0x20;
+	public static final byte TRANSITIONCNTMODE =       0x40;
+	public static final byte PERIODCOUNTERMODE =       0x60;
+	public static final byte PCTFULLSCALEMODE  = (byte)0x80;
+	public static final byte CELSIUSMODE       = (byte)0xA0;
+	public static final byte FARENHEITMODE     = (byte)0xC0;
+	public static final byte ANGLESTEPMODE     = (byte)0xE0;
+	public static final byte SLOPEMASK         = (byte)0x1F;
+	public static final byte MODEMASK          = (byte)0xE0;
 
 	/**
 	 * Firmware and protocol version request pdu. Page 11 of appendix 1.
@@ -151,9 +154,9 @@ public abstract class LegoCommunicationProtocol{
 		if(turn_ratio < -100 || turn_ratio > 100){
 			throw new InvalidParameterException("Turn ratio out of range.");
 		}
-		/*if(mode_byte != MOTORON && mode_byte != BRAKE && mode_byte != REGULATED){
+		if(mode_byte < 0x00 || mode_byte > 0x07){
 			throw new InvalidParameterException("Invalid mode byte.");
-		}*/
+		}
 		if(regulation_mode != REGULATION_MODE_IDLE && regulation_mode != REGULATION_MODE_MOTOR_SPEED && regulation_mode != REGULATION_MODE_MOTOR_SYNC){
 			throw new InvalidParameterException("Invalid regulation mode.");
 		}
@@ -161,7 +164,7 @@ public abstract class LegoCommunicationProtocol{
 			throw new InvalidParameterException("Invalid run state.");
 		}
 
-		message[0] = 0x0C;
+		message[0] = 0x0D;
 		message[1] = 0x00;
 		message[2] = DIRECT_COMMAND_NO_REPLY;
 		message[3] = SET_OUTPUT_STATE;
@@ -178,6 +181,13 @@ public abstract class LegoCommunicationProtocol{
 		return message;
 	}
 
+	/**
+	 * <p>Simpler call to the set motor configuration pdu method.</p>
+	 * 
+	 * @param output_port The port in the brick the motor is connected to.
+	 * @param power Motor power. Must be between -100 and 100.
+	 * @return The assembled pdu.
+	 */
 	public static byte[] setOutputState(byte output_port, byte power){
 		if(power == (byte)0){
 			return setOutputState(output_port, power, (byte)0x00, REGULATION_MODE_IDLE, (byte)0x00, MOTOR_RUN_STATE_IDLE);

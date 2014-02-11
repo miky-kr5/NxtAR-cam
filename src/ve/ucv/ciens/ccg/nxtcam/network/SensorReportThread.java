@@ -15,17 +15,23 @@ public class SensorReportThread extends Thread{
 	private String serverIp;
 	private boolean done;
 	private ObjectOutputStream writer;
+	private boolean connected;
 
 	public SensorReportThread(String serverIp){
 		super("Sensor Report Thread");
 		this.serverIp = serverIp;
 		done = false;
+		connected = false;
 	}
 
 	@Override
 	public void run(){
-		while(!done){
+		if(connectToServer()){
+			while(!done){
 
+			}
+		}else{
+			Logger.log_e(TAG, CLASS_NAME + ".run() :: Could not connect to the server.");
 		}
 	}
 
@@ -33,7 +39,7 @@ public class SensorReportThread extends Thread{
 		done = true;
 	}
 
-	public boolean connectToServer(){
+	private boolean connectToServer(){
 		boolean connected;
 		try{
 			socket = new Socket(serverIp, ProjectConstants.SENSOR_REPORT_PORT);
@@ -43,6 +49,10 @@ public class SensorReportThread extends Thread{
 			Logger.log_e(TAG, CLASS_NAME + ".connectToServer() :: IOException caught: " + io.getMessage());
 			connected = false;
 		}
+		return connected;
+	}
+
+	public boolean isConnected(){
 		return connected;
 	}
 }
