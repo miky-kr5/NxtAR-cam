@@ -54,4 +54,8 @@ public class MotorEventQueue {
 		motorEvents.add(event);
 		notifyAll();
 	}
+	
+	public synchronized int getSize(){
+		return motorEvents.size();
+	}
 }

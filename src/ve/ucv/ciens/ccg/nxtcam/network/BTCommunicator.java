@@ -228,9 +228,6 @@ public class BTCommunicator{
 		if(connected){
 			try{
 				byte[] message = new byte[bytes];
-				for(int i = 0; i < message.length; ++i){
-					message[i] = 0x00;
-				}
 				nxtInputStream.read(message, 0, bytes);
 				return message;
 			}catch(IOException e){
