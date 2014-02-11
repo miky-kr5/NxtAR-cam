@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.Socket;
 
 import ve.ucv.ciens.ccg.nxtcam.dialogs.ConnectRobotDialog;
 import ve.ucv.ciens.ccg.nxtcam.dialogs.ConnectRobotDialog.ConnectRobotDialogListener;
@@ -324,7 +323,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 		public ServiceDiscoveryTask(){
 			// Open a multicast socket and join the project's multicast group.
 			try{
-				udpSocket = new MulticastSocket(ProjectConstants.SERVER_UDP_PORT);
+				udpSocket = new MulticastSocket(ProjectConstants.SERVICE_DISCOVERY_PORT);
 				InetAddress group = InetAddress.getByName(ProjectConstants.MULTICAST_ADDRESS);
 				udpSocket.joinGroup(group);
 			}catch(IOException io){

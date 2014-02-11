@@ -16,8 +16,8 @@
 package ve.ucv.ciens.ccg.nxtcam;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
-import ve.ucv.ciens.ccg.nxtcam.network.VideoStreamingThread;
 import ve.ucv.ciens.ccg.nxtcam.network.LCPThread;
+import ve.ucv.ciens.ccg.nxtcam.network.VideoStreamingThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
 import android.app.Activity;
@@ -56,6 +56,9 @@ public class CamActivity extends Activity{
 		serverIp = intent.getStringExtra("address");
 		imThread = new VideoStreamingThread(serverIp);
 		imThread.start();
+
+		botThread = new LCPThread(serverIp);
+		botThread.start();
 	}
 
 	@Override
@@ -104,14 +107,17 @@ public class CamActivity extends Activity{
 			releaseCamera();
 		}
 	}
-	
+
 	@Override
 	public void onDestroy(){
 		super.onDestroy();
-		// TODO: Destroy the network threads.
+		imThread.finish();
 		imThread = null;
+		
+		botThread.finish();
+		botThread = null;
 	}
-	
+
 	@Override
 	public void onBackPressed(){
 		Intent result = new Intent();

@@ -21,9 +21,12 @@ import android.app.Activity;
 
 public abstract class ProjectConstants {
 	// Network related constants.
-	public static final int SERVER_UDP_PORT = 8889;
-	public static final int SERVER_TCP_PORT_1 = 9989;
-	public static final int SERVER_TCP_PORT_2 = 9990;
+	public static final int SERVICE_DISCOVERY_PORT = 9988;
+	public static final int VIDEO_STREAMING_PORT = 9989;
+	public static final int MOTOR_CONTROL_PORT = 9990;
+	public static final int SENSOR_REPORT_PORT = 9991;
+	public static final int APP_CONTROL_PORT = 9992;
+
 	public static final UUID SERIAL_PORT_SERVICE_CLASS_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 	public static final String OUI_LEGO = "00:16:53";
 	public static final String MULTICAST_ADDRESS = "230.0.0.1";
@@ -32,5 +35,5 @@ public abstract class ProjectConstants {
 	// Activity results.
 	public static final int RESULT_CAMERA_FAILURE = Activity.RESULT_FIRST_USER + 1;
 
-	public static final boolean DEBUG = false;
+	public static final boolean DEBUG = true;
 }
