@@ -107,7 +107,7 @@ public class VideoStreamingThread extends Thread{
 		imageSize = camMonitor.getImageParameters();
 
 		yuvImage = new YuvImage(image, ImageFormat.NV21, imageSize.width(), imageSize.height(), null);
-		yuvImage.compressToJpeg(imageSize, 90, outputStream);
+		yuvImage.compressToJpeg(imageSize, 100, outputStream);
 
 		message = new VideoFrameDataMessage();
 		message.data = outputStream.toByteArray();
