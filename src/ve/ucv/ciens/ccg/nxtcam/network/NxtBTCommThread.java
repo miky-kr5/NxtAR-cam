@@ -23,24 +23,21 @@ import ve.ucv.ciens.ccg.nxtcam.network.protocols.MotorMasks;
 import ve.ucv.ciens.ccg.nxtcam.robotcontrol.MotorEventQueue;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 
-public class LCPThread extends Thread{
+public class NxtBTCommThread extends Thread{
 	private static final String TAG = "LCP_THREAD";
-	private static final String CLASS_NAME = LCPThread.class.getSimpleName();
+	private static final String CLASS_NAME = NxtBTCommThread.class.getSimpleName();
 
 	private boolean done;
-	private boolean reportSensors;
 	private BTCommunicator btComm;
 	private MotorControlThread motorControl;
-	private SensorReportThread sensorReport;
 
 	private MotorEventQueue queue;
 
-	public LCPThread(String serverIp){
+	public NxtBTCommThread(String serverIp){
 		super("Robot Control Main Thread");
 		btComm = BTCommunicator.getInstance();
 		done = false;
 		motorControl = new MotorControlThread(serverIp);
-		sensorReport = new SensorReportThread(serverIp);
 		queue = MotorEventQueue.getInstance();
 	}
 
@@ -49,7 +46,6 @@ public class LCPThread extends Thread{
 		MotorEvent event;
 		byte[] msg = new byte[2];
 
-		sensorReport.start();
 		motorControl.start();
 
 		then = System.currentTimeMillis();
@@ -63,21 +59,18 @@ public class LCPThread extends Thread{
 			}
 		}
 
-		if((reportSensors = sensorReport.isConnected())){
-			Logger.log_d(TAG, CLASS_NAME + ".run() :: Sensor data can be reported.");
-		}else{
-			Logger.log_e(TAG, CLASS_NAME + ".run() :: Thread sensorReport could not connect to the server.");
-			Logger.log_e(TAG, CLASS_NAME + ".run() :: Sensor data will not be reported to server app.");
-		}
-
 		while(!done){
 			if(btComm.isBTEnabled() && btComm.isConnected()){
+				msg[0] = 0x00;
+				msg[1] = 0x00;
 
 				event = queue.getNextEvent();
 
 				try{
 					// Set the motor bit.
-					msg[0] = (event.getMotor() == motor_t.MOTOR_A) ? MotorMasks.MOTOR_A: ((event.getMotor() == motor_t.MOTOR_B) ? MotorMasks.MOTOR_B: MotorMasks.MOTOR_C);
+					msg[0] |= (event.getMotor() == motor_t.MOTOR_A) ? MotorMasks.MOTOR_A : 0;
+					msg[0] |= (event.getMotor() == motor_t.MOTOR_B) ? MotorMasks.MOTOR_B : 0;
+					msg[0] |= (event.getMotor() == motor_t.MOTOR_C) ? MotorMasks.MOTOR_C : 0;
 					// Set the direction bit.
 					if(event.getPower() > 0) msg[0] |= MotorMasks.DIRECTION;
 					// TODO: Set the recenter bits.
@@ -93,10 +86,6 @@ public class LCPThread extends Thread{
 
 				}catch(IOException io){
 					Logger.log_e(TAG, CLASS_NAME + ".run() :: IOException sending message to the robot: " + io.getMessage());
-				}
-
-				if(reportSensors){
-
 				}
 			}else{
 				Logger.log_e(TAG, CLASS_NAME +  ".run() :: The robot disconnected or was never available.");
