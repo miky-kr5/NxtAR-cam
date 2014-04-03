@@ -19,7 +19,7 @@ import java.io.IOException;
 
 import ve.ucv.ciens.ccg.networkdata.MotorEvent;
 import ve.ucv.ciens.ccg.networkdata.MotorEvent.motor_t;
-import ve.ucv.ciens.ccg.nxtcam.network.protocols.LegoCommunicationProtocol;
+import ve.ucv.ciens.ccg.nxtcam.network.protocols.MotorMasks;
 import ve.ucv.ciens.ccg.nxtcam.robotcontrol.MotorEventQueue;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 
@@ -47,6 +47,7 @@ public class LCPThread extends Thread{
 	public void run(){
 		long then, now, delta;
 		MotorEvent event;
+		byte[] msg = new byte[2];
 
 		sensorReport.start();
 		motorControl.start();
@@ -75,11 +76,17 @@ public class LCPThread extends Thread{
 				event = queue.getNextEvent();
 
 				try{
-					btComm.writeMessage(
-							LegoCommunicationProtocol.setOutputState(
-									event.getMotor() == motor_t.MOTOR_A ? LegoCommunicationProtocol.PORT_0 : (event.getMotor() == motor_t.MOTOR_B ? LegoCommunicationProtocol.PORT_1 : LegoCommunicationProtocol.PORT_2),
-											event.getPower())
-							);
+					// Set the motor bit.
+					msg[0] = (event.getMotor() == motor_t.MOTOR_A) ? MotorMasks.MOTOR_A: ((event.getMotor() == motor_t.MOTOR_B) ? MotorMasks.MOTOR_B: MotorMasks.MOTOR_C);
+					// Set the direction bit.
+					if(event.getPower() > 0) msg[0] |= MotorMasks.DIRECTION;
+					// TODO: Set the recenter bits.
+
+					// Set the power byte.
+					msg[1] = (byte)Math.abs(event.getPower());
+
+					// Send the message.
+					btComm.writeMessage(msg);
 					Logger.log_i(TAG, CLASS_NAME + ".run() :: Message sent to the robot.");
 
 					try{ sleep(40); }catch(InterruptedException ie){ }
@@ -89,7 +96,7 @@ public class LCPThread extends Thread{
 				}
 
 				if(reportSensors){
-					
+
 				}
 			}else{
 				Logger.log_e(TAG, CLASS_NAME +  ".run() :: The robot disconnected or was never available.");
