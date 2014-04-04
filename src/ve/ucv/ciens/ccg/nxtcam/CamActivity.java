@@ -16,7 +16,8 @@
 package ve.ucv.ciens.ccg.nxtcam;
 
 import ve.ucv.ciens.ccg.nxtcam.camera.CameraPreview;
-import ve.ucv.ciens.ccg.nxtcam.network.LCPThread;
+import ve.ucv.ciens.ccg.nxtcam.network.NxtBTCommThread;
+import ve.ucv.ciens.ccg.nxtcam.network.SensorReportThread;
 import ve.ucv.ciens.ccg.nxtcam.network.VideoStreamingThread;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
 import ve.ucv.ciens.ccg.nxtcam.utils.ProjectConstants;
@@ -40,7 +41,8 @@ public class CamActivity extends Activity{
 	private CameraPreview cPreview;
 	private CameraSetupTask camSetupTask;
 	private VideoStreamingThread imThread;
-	private LCPThread botThread;
+	private NxtBTCommThread botThread;
+	private SensorReportThread sensorThread;
 	private String serverIp;
 
 	/*******************
@@ -57,8 +59,11 @@ public class CamActivity extends Activity{
 		imThread = new VideoStreamingThread(serverIp);
 		imThread.start();
 
-		botThread = new LCPThread(serverIp);
+		botThread = new NxtBTCommThread(serverIp);
 		botThread.start();
+
+		sensorThread = new SensorReportThread(serverIp);
+		sensorThread.start();
 	}
 
 	@Override
@@ -92,14 +97,14 @@ public class CamActivity extends Activity{
 		camSetupTask = new CameraSetupTask();
 		camSetupTask.execute();
 
-		// imThread.start();
+		// TODO: resumethe imThread, botThread and sensorThread objects.
 	}
 
 	@Override
 	public void onPause(){
 		super.onPause();
 
-		// TODO: pause the imThread and botThread objects.
+		// TODO: pause the imThread, botThread and sensorThread objects.
 
 		if(cPreview != null){
 			cPreview.removePreviewCallback();
@@ -113,9 +118,12 @@ public class CamActivity extends Activity{
 		super.onDestroy();
 		imThread.finish();
 		imThread = null;
-		
+
 		botThread.finish();
 		botThread = null;
+
+		sensorThread.finish();
+		sensorThread = null;
 	}
 
 	@Override

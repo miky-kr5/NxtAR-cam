@@ -21,7 +21,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 import ve.ucv.ciens.ccg.networkdata.MotorEvent;
-import ve.ucv.ciens.ccg.networkdata.MotorEvent.motor_t;
 import ve.ucv.ciens.ccg.networkdata.MotorEventACK;
 import ve.ucv.ciens.ccg.nxtcam.robotcontrol.MotorEventQueue;
 import ve.ucv.ciens.ccg.nxtcam.utils.Logger;
@@ -64,7 +63,7 @@ public class MotorControlThread extends Thread {
 				if(event != null){
 					queue.addEvent(event);
 					Logger.log_i(TAG, CLASS_NAME + ".run() :: Motor control message enqueued.");
-					Logger.log_i(TAG, CLASS_NAME + ".run() :: Motor ID: " + (event.getMotor() == motor_t.MOTOR_A ? "MOTOR_A" : "MOTOR_C"));
+					Logger.log_i(TAG, CLASS_NAME + ".run() :: Motor ID: " + event.getMotor().toString());
 					Logger.log_i(TAG, CLASS_NAME + ".run() :: Motor power: " + Byte.toString(event.getPower()));
 				}else{
 					Logger.log_i(TAG, CLASS_NAME + ".run() :: Message could not be verified;");
