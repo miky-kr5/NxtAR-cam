@@ -73,7 +73,10 @@ public class NxtBTCommThread extends Thread{
 					msg[0] |= (event.getMotor() == motor_t.MOTOR_C) ? MotorMasks.MOTOR_C : 0;
 					// Set the direction bit.
 					if(event.getPower() > 0) msg[0] |= MotorMasks.DIRECTION;
-					// TODO: Set the recenter bits.
+					// Set the recenter bits.
+					msg[0] |= (event.getMotor() == motor_t.RECENTER) ? MotorMasks.RECENTER : 0;
+					if((msg[0] & MotorMasks.RECENTER) > 0)
+						Logger.log_i(TAG, CLASS_NAME + ".run(): Recenter received."); 
 
 					// Set the power byte.
 					msg[1] = (byte)Math.abs(event.getPower());
