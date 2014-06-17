@@ -54,7 +54,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 		super(context);
 		parentActivity = (Activity)context;
 
-		// surfaceView = new SurfaceView(context);
 		holder = getHolder();
 		holder.addCallback(this);
 
@@ -107,20 +106,20 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 		camParams = camera.getParameters();
 		camParams.getSupportedPreviewSizes();
 		List<Size> sizes = camParams.getSupportedPreviewSizes();
-		
+
 		for(Size size: sizes){
 			Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Supported preview size (" + size.width + ", " + size.height + ")");
 		}
-		
-		/*Size optimal = getOptimalPreviewSize(sizes, w, h);
+
+		Size optimal = getOptimalPreviewSize(sizes, 352, 288);
 		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged() :: Preview size set at (" + optimal.width + ", " + optimal.height + ")");
-		camParams.setPreviewSize(optimal.width, optimal.height);*/
-		camParams.setPreviewSize(352, 288);
+		camParams.setPreviewSize(optimal.width, optimal.height);
+		//		camParams.setPreviewSize(352, 288);
 		camera.setParameters(camParams);
-		/*previewWidth = optimal.width;
-		previewHeight = optimal.height;*/
-		previewWidth = 352;
-		previewHeight = 288;
+		previewWidth = optimal.width;
+		previewHeight = optimal.height;
+		//		previewWidth = 352;
+		//		previewHeight = 288;
 
 		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 		android.hardware.Camera.getCameraInfo(0, info);
