@@ -87,7 +87,7 @@ public class MainActivity extends Activity implements WifiOnDialogListener, Conn
 
 		// Set up gui components.
 		startButton = (Button)findViewById(R.id.startButton);
-		//startButton.setEnabled(false);
+		startButton.setEnabled(false);
 		connectButton = (Button)findViewById(R.id.connectButton);
 
 		// Set up services.

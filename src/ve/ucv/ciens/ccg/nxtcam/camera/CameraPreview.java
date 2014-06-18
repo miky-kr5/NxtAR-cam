@@ -116,8 +116,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
 		try{ camera.stopPreview(); }catch (Exception e){ }
 
+		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged(): Request layout.");
 		requestLayout();
 
+		Logger.log_d(TAG, CLASS_NAME + ".surfaceChanged(): Get parameters.");
 		camParams = camera.getParameters();
 		sizes = camParams.getSupportedPreviewSizes();
 
@@ -194,7 +196,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	 * @param target The ideal preview size.
 	 * @return The size from the list of sizes that better matches the target. Null if sizes is null or empty.
 	 */
-	private final Size getOptimalPreviewSize(List<Size> sizes, final Size target) {
+	private Size getOptimalPreviewSize(List<Size> sizes, final Size target) {
 		final int    TARGET_HEIGHT    = target.height;
 		Size         optimalSize      = null;
 		double       minDiff          = Double.MAX_VALUE;
