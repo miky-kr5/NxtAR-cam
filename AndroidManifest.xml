@@ -17,8 +17,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ve.ucv.ciens.ccg.nxtcam"
-    android:versionCode="140404"
-    android:versionName="14.04.04" >
+    android:versionCode="140626"
+    android:versionName="14.06.26" >
 
     <uses-sdk
         android:minSdkVersion="11"

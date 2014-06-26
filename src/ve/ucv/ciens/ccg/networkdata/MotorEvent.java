@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class MotorEvent implements Serializable{
 	private static final long serialVersionUID = 9989L;
 
-	public enum motor_t {NONE, MOTOR_A, MOTOR_B, MOTOR_C, MOTOR_AC, RECENTER};
+	public enum motor_t {NONE, MOTOR_A, MOTOR_B, MOTOR_C, MOTOR_AC, RECENTER, ROTATE_90};
 
 	private motor_t motor;
 	private byte power;
