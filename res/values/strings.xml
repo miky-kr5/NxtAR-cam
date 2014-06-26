@@ -17,7 +17,7 @@
 
 <resources>
 
-    <string name="app_name">NxtCAM</string>
+    <string name="app_name">NxtAR-cam</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="camera_success">Camera successfully opened</string>
